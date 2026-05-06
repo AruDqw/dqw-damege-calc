@@ -171,7 +171,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <div class="card-header">斬体ダメージ</div>
   <div class="row">
     <div class="row-label">斬体倍率（%）</div>
-    <div class="row-input"><input type="number" id="slash" value="88"></div>
+    <div class="row-input"><input type="number" id="slash" value="89"></div>
     <div class="row-result" id="r_E11">—</div>
   </div>
   <div class="row">
@@ -196,7 +196,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <div class="card-header">属性ダメージ</div>
   <div class="row">
     <div class="row-label">属性倍率（%）</div>
-    <div class="row-input"><input type="number" id="attr" value="25"></div>
+    <div class="row-input"><input type="number" id="attr" value="25.5"></div>
     <div class="row-result" id="r_E15">—</div>
   </div>
   <div class="row">
@@ -325,7 +325,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <div class="card-header">会心ダメージ</div>
   <div class="row">
     <div class="row-label">会心ダメアップ（%）</div>
-    <div class="row-input"><input type="number" id="crit_up" value="9" min="0"></div>
+    <div class="row-input"><input type="number" id="crit_up" value="22" min="0"></div>
     <div class="row-result" id="r_E26">—</div>
   </div>
   <div class="row">
@@ -350,11 +350,24 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 <!-- 計算式メモ -->
 <div class="formula-box">
   <strong>計算式：</strong><br>
-  ① 基礎値 = floor( (攻撃力 + バイシオン + LvUP + 剣魔合一) / 2 − 守備力 / 4 )<br>
-  ② 乱数幅 = floor( 基礎値 / 16 )　→　基礎値 ± 乱数幅 → floor<br>
-  ③ 第1段階 = floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果 × フォースブレイク × 斬体耐性 × 属性耐性 × 閃き × 会心合計 )<br>
-  ④ 最終ダメージ = floor( ③ × スキル倍率補正 × きあいため )<br>
-  ※ 最小は基礎値−乱数幅・会心下限、最大は基礎値+乱数幅・会心上限で同様に計算
+  ① LvUP係数 = floor( 1.04^段数 × 100 ) / 100　← 小数第3位を切り捨て<br>
+  &emsp;LvUP加算値 = 攻撃力 × ( LvUP係数 − 1 )<br>
+  ② 基礎値 = floor( (攻撃力 + バイシオン + LvUP + 剣魔合一) / 2 − 守備力 / 4 )<br>
+  ③ 乱数幅 = floor( 基礎値 / 16 )<br>
+  &emsp;下限基礎値 = floor( 基礎値 − 乱数幅 ) − 1<br>
+  &emsp;上限基礎値 = floor( 基礎値 + 乱数幅 ) + 1<br>
+  ④ テンション補正（T = 1 + 味方テンション% / 100）は以下に影響：<br>
+  &emsp;・斬体% / 属性% / 系統% / 名称% / 会心ダメアップ% → floor( 入力値 × T )　← 整数切り捨て<br>
+  &emsp;・斬体耐性% / 属性耐性% → floor( 入力値 × 敵T補正 / 100 )　← 整数切り捨て<br>
+  ⑤ 各倍率の計算（%→倍率変換後は小数第3位切り捨て）：<br>
+  &emsp;斬体合計 = floor( (100 + 斬体% + スキルUP + おうえん) / 100 × 1000 ) / 1000<br>
+  &emsp;属性合計 = floor( (100 + 属性% + FC×30 + FB) / 100 × 1000 ) / 1000<br>
+  &emsp;系統合計 = floor( (100 + 系統%) / 100 × 1000 ) / 1000<br>
+  &emsp;名称合計 = floor( (100 + 名称%) / 100 × 1000 ) / 1000<br>
+  &emsp;会心合計 = (会心種別% + 会心ダメアップ%) / 100　← 会心ダメアップは加算<br>
+  ⑥ 第1段階 = floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果 × フォースブレイク × 斬体耐性 × 属性耐性 × 閃き × 会心合計 )<br>
+  ⑦ 最終ダメージ = floor( ⑥ × スキル倍率補正 × きあいため )<br>
+  ※ 最小は下限基礎値・会心下限%、最大は上限基礎値・会心上限%で同様に計算
 </div>
 
 <!-- 履歴 -->
@@ -472,8 +485,9 @@ function calc() {
 
   // 会心種別に応じた中央値・下限・上限の倍率を決定
   const critType = $('crit_type').value;
+  const isNormal = critType === 'normal';
   let critMid, critMin, critMax;
-  if (critType === 'normal') {
+  if (isNormal) {
     critMid = 100; critMin = 100; critMax = 100;
   } else if (critType === 'crit') {
     critMid = 160; critMin = 160; critMax = 160;
@@ -483,10 +497,12 @@ function calc() {
     critMid = 250; critMin = 230; critMax = 270;
   }
 
-  const E26     = (critMid + crit_up_pct) / 100;
+  // 通常攻撃時は会心ダメアップ無効・閃き無効（強制1.0）
+  const E26     = isNormal ? 1.0 : (critMid + crit_up_pct) / 100;
   const E27     = E26;
-  const E27_min = (critMin + crit_up_pct) / 100;
-  const E27_max = (critMax + crit_up_pct) / 100;
+  const E27_min = isNormal ? 1.0 : (critMin + crit_up_pct) / 100;
+  const E27_max = isNormal ? 1.0 : (critMax + crit_up_pct) / 100;
+  const E24eff  = isNormal ? 1.0 : parseFloat($('flash').value);
 
   // スキル倍率と補正は別々に扱う
   const skill_mult       = skill_pct / 100;           // 例: 9.0
@@ -494,13 +510,13 @@ function calc() {
 
   const rand = Math.floor(E7 / 16);
   const E7_mid = E7;
-  const E7_min = Math.floor(E7 - rand);
-  const E7_max = Math.floor(E7 + rand);
+  const E7_min = Math.floor(E7 - rand) - 1;
+  const E7_max = Math.floor(E7 + rand) + 1;
 
   // 第1段階: スキル倍率補正・きあいため を除く全要素を掛けて切り捨て
   // 会心の下限・上限もここで分岐
   const step1 = (base, crit) =>
-    Math.floor(base * skill_mult * E14 * E18 * E20 * E21 * E22 * E23 * resist_slash * resist_attr * E24 * crit);
+    Math.floor(base * skill_mult * E14 * E18 * E20 * E21 * E22 * E23 * resist_slash * resist_attr * E24eff * crit);
 
   // 第2段階: スキル倍率補正 × きあいため を掛けて切り捨て
   const step2 = (base, crit) => Math.floor(step1(base, crit) * skill_bonus_mult * E25);
@@ -541,7 +557,7 @@ function calc() {
   $('r_E22').textContent = fd(E22);
   $('r_fbreak_in').textContent = n('fbreak');
   $('r_E23').textContent = fd(E23);
-  $('r_E24').textContent = fd(E24);
+  $('r_E24').textContent = fd(E24eff);
   $('r_E25').textContent = fd(E25);
   $('r_E26').textContent = fd(E26);
   // 会心種別の表示
