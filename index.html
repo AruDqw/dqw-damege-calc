@@ -428,7 +428,8 @@ const n = id => parseFloat($(id).value) || 0;
 function calc() {
   const E2 = n('atk');
   const E3 = E2 * n('voc') * 0.2;
-  const E4 = E2 * (Math.pow(1.04, n('lv')) - 1);
+  const lvMult = Math.floor(Math.pow(1.04, n('lv')) * 100) / 100;
+  const E4 = E2 * (lvMult - 1);
   const E5 = n('sword');
   const E6 = n('def');
   const E7 = Math.floor((E2 + E3 + E4 + E5) / 2 - E6 / 4);
@@ -440,32 +441,34 @@ function calc() {
   const enemy_pct = parseFloat($('tension_enemy').value);
   const E10 = 1 + ally_pct / 100;
 
-  const E11 = n('slash') * E10;
+  const E11 = Math.floor(n('slash') * E10);       // 斬体倍率%：整数切り捨て
   const E12 = n('skill_up');
   const E13 = n('cheer');
-  const E14 = (100 + E11 + E12 + E13) / 100;
+  const E14 = Math.floor((100 + E11 + E12 + E13) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
 
-  const E15 = n('attr') * E10;
+  const E15 = Math.floor(n('attr') * E10);         // 属性倍率%：整数切り捨て
   const E16 = n('fc') * 30;
   const E17 = n('fb');
-  const E18 = (100 + E15 + E16 + E17) / 100;
+  const E18 = Math.floor((100 + E15 + E16 + E17) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
 
   const raw_slash = n('resist_slash');
   const raw_attr  = n('resist_attr');
   const slash_factor = raw_slash >= 0 ? (100 + enemy_pct) : (100 - enemy_pct);
   const attr_factor  = raw_attr  >= 0 ? (100 + enemy_pct) : (100 - enemy_pct);
-  const effective_slash_pct = raw_slash * slash_factor / 100;
-  const effective_attr_pct  = raw_attr  * attr_factor  / 100;
+  const effective_slash_pct = Math.floor(raw_slash * slash_factor / 100);  // 斬体耐性%：整数切り捨て
+  const effective_attr_pct  = Math.floor(raw_attr  * attr_factor  / 100);  // 属性耐性%：整数切り捨て
   const resist_slash = (100 - effective_slash_pct) / 100;
   const resist_attr  = (100 - effective_attr_pct)  / 100;
 
-  const E20 = (n('keitou') * E10 + 100) / 100;
-  const E21 = (n('meishou') * E10 + 100) / 100;
+  const keitou_pct = Math.floor(n('keitou') * E10);  // 系統倍率%：整数切り捨て
+  const meishou_pct = Math.floor(n('meishou') * E10); // 名称倍率%：整数切り捨て
+  const E20 = Math.floor((keitou_pct + 100) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
+  const E21 = Math.floor((meishou_pct + 100) / 100 * 1000) / 1000; // 倍率：小数第3位切り捨て
   const E22 = 1 + (n('inga') * 20) / 100;
   const E23 = 1 + n('fbreak') * 30 / 100;
   const E24 = parseFloat($('flash').value);
   const E25 = parseFloat($('kiai').value);
-  const E26 = 1 + n('crit_up') * E10 / 100;
+  const crit_up_pct = Math.floor(n('crit_up') * E10); // 会心ダメアップ%：整数切り捨て
 
   // 会心種別に応じた中央値・下限・上限の倍率を決定
   const critType = $('crit_type').value;
@@ -480,9 +483,10 @@ function calc() {
     critMid = 250; critMin = 230; critMax = 270;
   }
 
-  const E27     = E26 * critMid / 100;
-  const E27_min = E26 * critMin / 100;
-  const E27_max = E26 * critMax / 100;
+  const E26     = (critMid + crit_up_pct) / 100;
+  const E27     = E26;
+  const E27_min = (critMin + crit_up_pct) / 100;
+  const E27_max = (critMax + crit_up_pct) / 100;
 
   // スキル倍率と補正は別々に扱う
   const skill_mult       = skill_pct / 100;           // 例: 9.0
@@ -527,11 +531,11 @@ function calc() {
   $('r_E16').textContent = E16;
   $('r_E17').textContent = E17;
   $('r_E18').textContent = fd(E18);
-  $('r_resist_slash').textContent = fd(resist_slash) + '\n(' + effective_slash_pct.toFixed(1) + '%)';
-  $('r_resist_attr').textContent  = fd(resist_attr)  + '\n(' + effective_attr_pct.toFixed(1) + '%)';
-  $('r_keitou_in').textContent = n('keitou');
+  $('r_resist_slash').textContent = fd(resist_slash) + '\n(' + effective_slash_pct + '%)';
+  $('r_resist_attr').textContent  = fd(resist_attr)  + '\n(' + effective_attr_pct + '%)';
+  $('r_keitou_in').textContent = keitou_pct;
   $('r_E20').textContent = fd(E20);
-  $('r_meishou_in').textContent = n('meishou');
+  $('r_meishou_in').textContent = meishou_pct;
   $('r_E21').textContent = fd(E21);
   $('r_inga_in').textContent = n('inga');
   $('r_E22').textContent = fd(E22);
