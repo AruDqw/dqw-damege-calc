@@ -112,17 +112,47 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result" id="r_E4">—</div>
   </div>
   <div class="row">
-    <div class="row-label">剣魔合一（加算値）</div>
-    <div class="row-input"><input type="number" id="sword" value="0"></div>
+    <div class="row-label">剣魔合一（加算値）<small>LvUP段数に応じて×1.04^n（切り捨て×n回）</small></div>
+    <div class="row-input"><input type="number" id="sword" value="0" min="0"></div>
     <div class="row-result" id="r_E5">—</div>
   </div>
   <div class="row">
+    <div class="row-label">最終攻撃力<small>攻撃力＋バイシオン＋LvUP変化＋剣魔合一</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="r_atk_total">—</div>
+  </div>
+  <div class="row">
     <div class="row-label">敵の守備力</div>
-    <div class="row-input"><input type="number" id="def" value="0"></div>
+    <div class="row-input"><input type="number" id="def" value="3470"></div>
     <div class="row-result" id="r_E6">—</div>
   </div>
+  <div class="row">
+    <div class="row-label">敵の守備力変化（段数）<small>−3〜+3、1段階で±20%（レベルダウン前の守備力に対して）</small></div>
+    <div class="row-input"><input type="number" id="def_change" value="1" min="-3" max="3"></div>
+    <div class="row-result" id="r_def_change">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">敵のレベルダウン（段数）<small>0〜10、1段階で守備力−4%（切り捨て×10回）</small></div>
+    <div class="row-input"><input type="number" id="enemy_lvdown" value="0" min="0" max="10"></div>
+    <div class="row-result" id="r_enemy_lvdown">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">直撃</div>
+    <div class="row-input">
+      <select id="direct_hit">
+        <option value="0">なし</option>
+        <option value="1" selected>あり（守備力 → 0）</option>
+      </select>
+    </div>
+    <div class="row-result note-only" id="r_direct_hit">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">最終守備力<small>（守備力×レベルダウン係数）＋守備力変化</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="r_def_final">—</div>
+  </div>
   <div class="row divider">
-    <div class="row-label star">★ 基礎値<small>(E2+E3+E4+E5)/2 − E6/4</small></div>
+    <div class="row-label star">★ 基礎値<small>(E2+E3+E4+E5)/2 − 最終守備力/4</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key" id="r_E7">—</div>
   </div>
@@ -175,17 +205,41 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result" id="r_E11">—</div>
   </div>
   <div class="row">
-    <div class="row-label">スキルダメージアップ（%）</div>
-    <div class="row-input"><input type="number" id="skill_up" value="40"></div>
+    <div class="row-label">スキルダメージアップ（段数）<small>ラーミアなど　1段階=20%</small></div>
+    <div class="row-input">
+      <select id="skill_up">
+        <option value="0">なし　+0%</option>
+        <option value="20">1段階 +20%</option>
+        <option value="40" selected>2段階 +40%</option>
+        <option value="60">3段階 +60%</option>
+      </select>
+    </div>
     <div class="row-result" id="r_E12">—</div>
   </div>
   <div class="row">
-    <div class="row-label">おうえん（%）</div>
-    <div class="row-input"><input type="number" id="cheer" value="80"></div>
+    <div class="row-label">斬体ダメージアップ（段数）<small>円月輪など　1段階=20%</small></div>
+    <div class="row-input">
+      <select id="slash_up">
+        <option value="0" selected>なし　+0%</option>
+        <option value="20">1段階 +20%</option>
+        <option value="40">2段階 +40%</option>
+        <option value="60">3段階 +60%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_slash_up">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">おうえん</div>
+    <div class="row-input">
+      <select id="cheer">
+        <option value="80" selected>あり　+80%</option>
+        <option value="0">なし　+0%</option>
+      </select>
+    </div>
     <div class="row-result" id="r_E13">—</div>
   </div>
   <div class="row divider">
-    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+スキルUP+おうえん)/100</small></div>
+    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+スキルUP+斬体UP+おうえん)/100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key" id="r_E14">—</div>
   </div>
@@ -320,6 +374,66 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   </div>
 </div>
 
+<!-- 斬体耐性変化 -->
+<div class="card">
+  <div class="card-header">斬体耐性変化</div>
+  <div class="row">
+    <div class="row-label">斬体耐性変化</div>
+    <div class="row-input">
+      <select id="slash_res_change">
+        <option value="0" selected>なし　±0%</option>
+        <option value="105">−3　+105%</option>
+        <option value="70">−2　+70%</option>
+        <option value="35">−1　+35%</option>
+        <option value="-20">+1　−20%</option>
+        <option value="-40">+2　−40%</option>
+        <option value="-60">+3　−60%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_slash_res_change">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">衰弱</div>
+    <div class="row-input">
+      <select id="suijaku">
+        <option value="0" selected>なし　+0%</option>
+        <option value="10">1段階　+10%</option>
+        <option value="15">2段階　+15%</option>
+        <option value="20">3段階　+20%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_suijaku">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">凍結</div>
+    <div class="row-input">
+      <select id="freeze">
+        <option value="0" selected>なし　+0%</option>
+        <option value="10">1段階　+10%</option>
+        <option value="15">2段階　+15%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_freeze">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">戦意喪失</div>
+    <div class="row-input">
+      <select id="senisosshitsu">
+        <option value="0" selected>なし　+0%</option>
+        <option value="5">1段階　+5%</option>
+        <option value="10">2段階　+10%</option>
+        <option value="25">3段階　+25%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_senisosshitsu">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 斬体耐性変化合計<small>(100 + 合計%) / 100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key" id="r_slash_res_total">—</div>
+  </div>
+</div>
+
 <!-- 会心ダメージ -->
 <div class="card">
   <div class="card-header">会心ダメージ</div>
@@ -350,23 +464,26 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 <!-- 計算式メモ -->
 <div class="formula-box">
   <strong>計算式：</strong><br>
-  ① LvUP係数 = floor( 1.04^段数 × 100 ) / 100　← 小数第3位を切り捨て<br>
-  &emsp;LvUP加算値 = 攻撃力 × ( LvUP係数 − 1 )<br>
-  ② 基礎値 = floor( (攻撃力 + バイシオン + LvUP + 剣魔合一) / 2 − 守備力 / 4 )<br>
-  ③ 乱数幅 = floor( 基礎値 / 16 )<br>
+  ① LvUP加算値：攻撃力に×1.04を段数回繰り返し（毎回切り捨て）、元の攻撃力との差分<br>
+  ① 剣魔合一：入力値に×1.04を段数回繰り返し（毎回切り捨て）← 攻撃力と同じ計算<br>
+  ② 敵レベルダウン：0.96^段数 を10回繰り返し切り捨てで守備力に適用<br>
+  &emsp;敵守備力変化：レベルダウン前の守備力 × ±20%×段数<br>
+  &emsp;最終守備力 = floor(守備力 × LvDown係数) + 守備力変化<br>
+  ③ 基礎値 = floor( (攻撃力 + バイシオン + LvUP + 剣魔合一) / 2 − 最終守備力 / 4 )<br>
+  ④ 乱数幅 = floor( 基礎値 / 16 )<br>
   &emsp;下限基礎値 = floor( 基礎値 − 乱数幅 ) − 1<br>
   &emsp;上限基礎値 = floor( 基礎値 + 乱数幅 ) + 1<br>
-  ④ テンション補正（T = 1 + 味方テンション% / 100）は以下に影響：<br>
+  ⑤ テンション補正（T = 1 + 味方テンション% / 100）は以下に影響：<br>
   &emsp;・斬体% / 属性% / 系統% / 名称% / 会心ダメアップ% → floor( 入力値 × T )　← 整数切り捨て<br>
   &emsp;・斬体耐性% / 属性耐性% → floor( 入力値 × 敵T補正 / 100 )　← 整数切り捨て<br>
-  ⑤ 各倍率の計算（%→倍率変換後は小数第3位切り捨て）：<br>
+  ⑥ 各倍率の計算（%→倍率変換後は小数第3位切り捨て）：<br>
   &emsp;斬体合計 = floor( (100 + 斬体% + スキルUP + おうえん) / 100 × 1000 ) / 1000<br>
   &emsp;属性合計 = floor( (100 + 属性% + FC×30 + FB) / 100 × 1000 ) / 1000<br>
   &emsp;系統合計 = floor( (100 + 系統%) / 100 × 1000 ) / 1000<br>
   &emsp;名称合計 = floor( (100 + 名称%) / 100 × 1000 ) / 1000<br>
   &emsp;会心合計 = (会心種別% + 会心ダメアップ%) / 100　← 会心ダメアップは加算<br>
-  ⑥ 第1段階 = floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果 × フォースブレイク × 斬体耐性 × 属性耐性 × 閃き × 会心合計 )<br>
-  ⑦ 最終ダメージ = floor( ⑥ × スキル倍率補正 × きあいため )<br>
+  ⑦ 第1段階 = floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果 × フォースブレイク × 斬体耐性 × 属性耐性 × 閃き × 会心合計 )<br>
+  ⑧ 最終ダメージ = floor( ⑦ × スキル倍率補正 × きあいため )<br>
   ※ 最小は下限基礎値・会心下限%、最大は上限基礎値・会心上限%で同様に計算
 </div>
 
@@ -441,11 +558,40 @@ const n = id => parseFloat($(id).value) || 0;
 function calc() {
   const E2 = n('atk');
   const E3 = E2 * n('voc') * 0.2;
-  const lvMult = Math.floor(Math.pow(1.04, n('lv')) * 100) / 100;
-  const E4 = E2 * (lvMult - 1);
-  const E5 = n('sword');
-  const E6 = n('def');
-  const E7 = Math.floor((E2 + E3 + E4 + E5) / 2 - E6 / 4);
+  const lvSteps = Math.round(n('lv'));
+  let atkAfterLv = E2;
+  for (let i = 0; i < lvSteps; i++) {
+    atkAfterLv = Math.floor(atkAfterLv * 1.04);
+  }
+  const E4 = atkAfterLv - E2;
+
+  // 剣魔合一：入力値にレベルアップ段数分だけ×1.04を繰り返し（毎回切り捨て）
+  const swordBase = n('sword');
+  let swordVal = swordBase;
+  for (let i = 0; i < lvSteps; i++) {
+    swordVal = Math.floor(swordVal * 1.04);
+  }
+  const E5 = swordVal;
+
+  // 敵のレベルダウン：0.96を段数回繰り返し掛けて各回切り捨て（×10回）
+  const defBase = n('def');
+  const lvdownSteps = Math.round(n('enemy_lvdown'));
+  let defAfterLvdown = defBase;
+  for (let i = 0; i < lvdownSteps; i++) {
+    defAfterLvdown = Math.floor(defAfterLvdown * 0.96);
+  }
+  const lvdownDiff = defAfterLvdown - defBase; // 変化値（負）
+
+  // 敵の守備力変化：レベルダウン前の守備力に対して±20%×段数
+  const defChangeSteps = n('def_change');
+  const defChangeVal = Math.floor(defBase * defChangeSteps * 0.20);
+
+  // 最終守備力 = レベルダウン後守備力 + 守備力変化
+  const isDirectHit = $('direct_hit').value === '1';
+  const defFinal = isDirectHit ? 0 : defAfterLvdown + defChangeVal;
+
+  const E6 = defBase;
+  const E7 = Math.floor((E2 + E3 + E4 + E5) / 2 - defFinal / 4);
 
   const skill_pct = n('skill_pct');
   const skill_bonus_pct = n('skill_bonus_pct');
@@ -456,8 +602,9 @@ function calc() {
 
   const E11 = Math.floor(n('slash') * E10);       // 斬体倍率%：整数切り捨て
   const E12 = n('skill_up');
+  const slashUp = n('slash_up');
   const E13 = n('cheer');
-  const E14 = Math.floor((100 + E11 + E12 + E13) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
+  const E14 = Math.floor((100 + E11 + E12 + slashUp + E13) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
 
   const E15 = Math.floor(n('attr') * E10);         // 属性倍率%：整数切り捨て
   const E16 = n('fc') * 30;
@@ -513,10 +660,17 @@ function calc() {
   const E7_min = Math.floor(E7 - rand) - 1;
   const E7_max = Math.floor(E7 + rand) + 1;
 
+  // 斬体耐性変化合計
+  const slashResChange = parseFloat($('slash_res_change').value);
+  const suijaku        = parseFloat($('suijaku').value);
+  const freeze         = parseFloat($('freeze').value);
+  const senisosshitsu  = parseFloat($('senisosshitsu').value);
+  const slashResTotal  = (100 + slashResChange + suijaku + freeze + senisosshitsu) / 100;
+
   // 第1段階: スキル倍率補正・きあいため を除く全要素を掛けて切り捨て
   // 会心の下限・上限もここで分岐
   const step1 = (base, crit) =>
-    Math.floor(base * skill_mult * E14 * E18 * E20 * E21 * E22 * E23 * resist_slash * resist_attr * E24eff * crit);
+    Math.floor(base * skill_mult * E14 * E18 * E20 * E21 * E22 * E23 * resist_slash * resist_attr * E24eff * crit * slashResTotal);
 
   // 第2段階: スキル倍率補正 × きあいため を掛けて切り捨て
   const step2 = (base, crit) => Math.floor(step1(base, crit) * skill_bonus_mult * E25);
@@ -532,7 +686,12 @@ function calc() {
   $('r_E3').textContent = fi(E3);
   $('r_E4').textContent = fi(E4);
   $('r_E5').textContent = fi(E5);
+  $('r_atk_total').textContent = fi(E2 + E3 + E4 + E5);
   $('r_E6').textContent = fi(E6);
+  $('r_enemy_lvdown').textContent = (lvdownDiff === 0 ? '±0' : fi(lvdownDiff));
+  $('r_def_change').textContent = (defChangeVal >= 0 ? '+' : '') + fi(defChangeVal);
+  $('r_direct_hit').textContent = isDirectHit ? '→ 0' : '—';
+  $('r_def_final').textContent = fi(defFinal);
   $('r_E7').textContent = fi(E7) + '\n' + fi(E7_min) + '〜' + fi(E7_max);
   $('r_skill_pct').textContent = fd(skill_mult);
   $('r_skill_bonus_pct').textContent = fd(skill_bonus_mult);
@@ -541,6 +700,7 @@ function calc() {
   $('r_tension_enemy').textContent = (enemy_pct >= 0 ? '+' : '') + enemy_pct + '%';
   $('r_E11').textContent = fd(E11);
   $('r_E12').textContent = E12;
+  $('r_slash_up').textContent = slashUp;
   $('r_E13').textContent = E13;
   $('r_E14').textContent = fd(E14);
   $('r_E15').textContent = fd(E15);
@@ -560,6 +720,11 @@ function calc() {
   $('r_E24').textContent = fd(E24eff);
   $('r_E25').textContent = fd(E25);
   $('r_E26').textContent = fd(E26);
+  $('r_slash_res_change').textContent = (slashResChange >= 0 ? '+' : '') + slashResChange + '%';
+  $('r_suijaku').textContent       = '+' + suijaku + '%';
+  $('r_freeze').textContent        = '+' + freeze + '%';
+  $('r_senisosshitsu').textContent = '+' + senisosshitsu + '%';
+  $('r_slash_res_total').textContent = fd(slashResTotal);
   // 会心種別の表示
   const critLabel = critType === 'normal' ? '100%'
     : critType === 'crit' ? '160%'
@@ -578,15 +743,16 @@ calc();
 // ===== 履歴機能 =====
 // 保存対象の全入力フィールドID
 const INPUT_IDS = [
-  'atk','voc','lv','sword','def',
+  'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
   'tension_ally',
-  'slash','skill_up','cheer',
+  'slash','skill_up','slash_up','cheer',
   'attr','fc','fb',
   'keitou','meishou',
   'tension_enemy',
   'resist_slash','resist_attr',
   'inga','fbreak','flash','kiai',
+  'slash_res_change','suijaku','freeze','senisosshitsu',
   'crit_up','crit_type'
 ];
 
