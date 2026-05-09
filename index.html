@@ -338,12 +338,22 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result key step1" id="r_resist_attr">—</div>
   </div>
   <div class="row divider">
+    <div class="row-label">因果の極み<small>あり：因果合計にさらに+30%</small></div>
+    <div class="row-input">
+      <select id="inga_kiwami">
+        <option value="0">なし</option>
+        <option value="1">あり　+30%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_inga_kiwami">—</div>
+  </div>
+  <div class="row">
     <div class="row-label">因果（段数）</div>
     <div class="row-input"><input type="number" id="inga" value="4" min="0" max="6"></div>
     <div class="row-result" id="r_inga_in">—</div>
   </div>
   <div class="row">
-    <div class="row-label star">★ 因果合計<small>1 + (段数×20) / 100</small></div>
+    <div class="row-label star">★ 因果合計<small>1 + (段数×20 + 極み×30) / 100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key step1" id="r_E22">—</div>
   </div>
@@ -492,7 +502,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   &emsp;系統合計 = floor( (100 + 系統%) / 100 × 1000 ) / 1000　／　名称合計 = floor( (100 + 名称%) / 100 × 1000 ) / 1000<br>
   &emsp;会心合計 = (会心種別% + 会心ダメアップ%) / 100　← 会心ダメアップは加算<br>
   &emsp;斬体耐性合計 = (100 + 斬体耐性変化 + 衰弱 + 凍結 + 戦意喪失) / 100<br>
-  <span class="step1-text">⑥【第1段階】= floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果 × (フォースブレイク＋属性耐性変化) × 斬体耐性 × 属性耐性 × 閃き × 会心合計 × 斬体耐性合計 )</span><br>
+  <span class="step1-text">⑥【第1段階】= floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果(1+段数×20%+極み30%) × (フォースブレイク＋属性耐性変化) × 斬体耐性 × 属性耐性 × 閃き × 会心合計 × 斬体耐性合計 )</span><br>
   <span class="step2-text">⑦【第2段階】最終ダメージ = floor( ⑥ × スキル倍率補正 × きあいため )</span><br>
   ※ 最小は下限基礎値・会心下限%、最大は上限基礎値・会心上限%で同様に計算
 </div>
@@ -626,7 +636,8 @@ function calc() {
   const meishou_pct = Math.floor(n('meishou') * E10); // 名称倍率%：整数切り捨て
   const E20 = Math.floor((keitou_pct + 100) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
   const E21 = Math.floor((meishou_pct + 100) / 100 * 1000) / 1000; // 倍率：小数第3位切り捨て
-  const E22 = 1 + (n('inga') * 20) / 100;
+  const ingaKiwami = parseFloat($('inga_kiwami').value);
+  const E22 = 1 + (n('inga') * 20 + ingaKiwami * 30) / 100;
   const attrResChangeSteps = n('attr_res_change');
   const E23 = 1 + (n('fbreak') * 30 - attrResChangeSteps * 20) / 100;
   const E24 = parseFloat($('flash').value);
@@ -715,6 +726,7 @@ function calc() {
   $('r_E20').textContent = fd(E20);
   $('r_meishou_in').textContent = meishou_pct;
   $('r_E21').textContent = fd(E21);
+  $('r_inga_kiwami').textContent = ingaKiwami ? '+30%' : '—';
   $('r_inga_in').textContent = n('inga');
   $('r_E22').textContent = fd(E22);
   $('r_fbreak_in').textContent = n('fbreak');
@@ -740,11 +752,31 @@ function calc() {
   $('result_max').textContent = fi(E28_max);
 }
 
-document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', calc));
-calc();
+// ===== localStorage 自動保存・復元 =====
+const LS_KEY = 'dqw_calc_inputs';
 
-// ===== 履歴機能 =====
-// 保存対象の全入力フィールドID
+function lsSave() {
+  const values = {};
+  INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) values[id] = el.value;
+  });
+  try { localStorage.setItem(LS_KEY, JSON.stringify(values)); } catch(e) {}
+}
+
+function lsLoad() {
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (!saved) return;
+    const values = JSON.parse(saved);
+    INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && values[id] !== undefined) el.value = values[id];
+    });
+  } catch(e) {}
+}
+
+// ===== 保存対象の全入力フィールドID =====
 const INPUT_IDS = [
   'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
@@ -754,12 +786,32 @@ const INPUT_IDS = [
   'keitou','meishou',
   'tension_enemy',
   'resist_slash','resist_attr',
-  'inga','fbreak','attr_res_change','flash','kiai',
+  'inga','inga_kiwami','fbreak','attr_res_change','flash','kiai',
   'slash_res_change','suijaku','freeze','senisosshitsu',
   'crit_up','crit_type'
 ];
 
+lsLoad();
+document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => { calc(); lsSave(); }));
+calc();
+
+// ===== 履歴スロット =====
+const LS_SLOTS_KEY = 'dqw_calc_slots';
 const slots = { 1: null, 2: null, 3: null };
+
+function slotsLsSave() {
+  try { localStorage.setItem(LS_SLOTS_KEY, JSON.stringify(slots)); } catch(e) {}
+}
+
+// ページ読み込み時に履歴スロットを復元（historyUpdateUI より後で呼ぶ）
+function slotsLsLoad() {
+  try {
+    const saved = localStorage.getItem(LS_SLOTS_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    [1,2,3].forEach(i => { if (data[i]) slots[i] = data[i]; });
+  } catch(e) {}
+}
 
 function historyUpdateUI(i) {
   const s = slots[i];
@@ -771,7 +823,6 @@ function historyUpdateUI(i) {
     numsEl.className = 'h-nums';
     loadBtn.disabled  = false;
     clearBtn.disabled = false;
-    // メモも復元
     document.getElementById('h' + i + '_name').value = s.name || '';
   } else {
     numsEl.textContent = '未保存';
@@ -786,7 +837,6 @@ function historySave(i) {
   const mid = document.getElementById('result').textContent;
   const max = document.getElementById('result_max').textContent;
   const name = document.getElementById('h' + i + '_name').value;
-  // 全入力値をスナップショット
   const values = {};
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
@@ -794,6 +844,7 @@ function historySave(i) {
   });
   slots[i] = { min, mid, max, name, values };
   historyUpdateUI(i);
+  slotsLsSave();
 }
 
 function historyLoad(i) {
@@ -801,18 +852,22 @@ function historyLoad(i) {
   if (!s) return;
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
-    if (el && s.values[id] !== undefined) {
-      el.value = s.values[id];
-    }
+    if (el && s.values[id] !== undefined) el.value = s.values[id];
   });
   calc();
+  lsSave();
 }
 
 function historyClear(i) {
   slots[i] = null;
   document.getElementById('h' + i + '_name').value = '';
   historyUpdateUI(i);
+  slotsLsSave();
 }
+
+// 履歴スロットを復元してUIに反映
+slotsLsLoad();
+[1,2,3].forEach(i => historyUpdateUI(i));
 </script>
 </body>
 </html>
