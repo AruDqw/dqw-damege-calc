@@ -105,12 +105,56 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 <div class="wrap">
 <h1>⚔️ DQW 物理ダメージ計算機</h1>
 
+<!-- 履歴 -->
+<div class="history-box">
+  <div class="card-header">📋 計算結果の保存</div>
+  <div class="history-slot">
+    <div class="history-slot-label">1</div>
+    <div class="history-slot-data">
+      <div class="h-name"><input type="text" id="h1_name" placeholder="メモ（任意）"></div>
+      <div class="h-nums empty" id="h1_nums">未保存</div>
+    </div>
+    <div class="history-slot-btns">
+      <button class="h-btn save"  onclick="historySave(1)">保存</button>
+      <button class="h-btn load"  onclick="historyLoad(1)" id="h1_load" disabled>呼出</button>
+      <button class="h-btn clear" onclick="historyClear(1)" id="h1_clear" disabled>消去</button>
+    </div>
+  </div>
+  <div class="history-slot">
+    <div class="history-slot-label">2</div>
+    <div class="history-slot-data">
+      <div class="h-name"><input type="text" id="h2_name" placeholder="メモ（任意）"></div>
+      <div class="h-nums empty" id="h2_nums">未保存</div>
+    </div>
+    <div class="history-slot-btns">
+      <button class="h-btn save"  onclick="historySave(2)">保存</button>
+      <button class="h-btn load"  onclick="historyLoad(2)" id="h2_load" disabled>呼出</button>
+      <button class="h-btn clear" onclick="historyClear(2)" id="h2_clear" disabled>消去</button>
+    </div>
+  </div>
+  <div class="history-slot">
+    <div class="history-slot-label">3</div>
+    <div class="history-slot-data">
+      <div class="h-name"><input type="text" id="h3_name" placeholder="メモ（任意）"></div>
+      <div class="h-nums empty" id="h3_nums">未保存</div>
+    </div>
+    <div class="history-slot-btns">
+      <button class="h-btn save"  onclick="historySave(3)">保存</button>
+      <button class="h-btn load"  onclick="historyLoad(3)" id="h3_load" disabled>呼出</button>
+      <button class="h-btn clear" onclick="historyClear(3)" id="h3_clear" disabled>消去</button>
+    </div>
+  </div>
+  <div style="padding:8px 12px;">
+    <button class="h-btn" onclick="resetToDefault()" style="background:#f5e0e0;color:#a00000;width:100%;font-size:12px;padding:7px 0;">🔄 デフォルト設定に初期化する</button>
+  </div>
+</div>
+
 <!-- 攻撃力・基礎値 -->
 <div class="card">
   <div class="card-header">攻撃力・基礎値</div>
   <div class="row">
     <div class="row-label">攻撃力</div>
-    <div class="row-input"><input type="number" id="atk" value="1597"></div>
+    <div class="row-input"><input type="number" id="atk" value="1583"></div>
     <div class="row-result" id="r_E2">—</div>
   </div>
   <div class="row">
@@ -120,12 +164,12 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   </div>
   <div class="row">
     <div class="row-label">レベルアップ（段数）</div>
-    <div class="row-input"><input type="number" id="lv" value="17" min="0" max="20"></div>
+    <div class="row-input"><input type="number" id="lv" value="15" min="0" max="20"></div>
     <div class="row-result" id="r_E4">—</div>
   </div>
   <div class="row">
     <div class="row-label">剣魔合一（加算値）<small>倍率=floor(1.04^n×100)/100、元の値×倍率で切り捨て</small></div>
-    <div class="row-input"><input type="number" id="sword" value="0" min="0"></div>
+    <div class="row-input"><input type="number" id="sword" value="831" min="0"></div>
     <div class="row-result" id="r_E5">—</div>
   </div>
   <div class="row">
@@ -135,12 +179,12 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   </div>
   <div class="row">
     <div class="row-label">敵の守備力</div>
-    <div class="row-input"><input type="number" id="def" value="3470"></div>
+    <div class="row-input"><input type="number" id="def" value="6248"></div>
     <div class="row-result" id="r_E6">—</div>
   </div>
   <div class="row">
     <div class="row-label">敵の守備力変化（段数）<small>−3〜+3、1段階で±20%（レベルダウン前の守備力に対して）</small></div>
-    <div class="row-input"><input type="number" id="def_change" value="1" min="-3" max="3"></div>
+    <div class="row-input"><input type="number" id="def_change" value="-2" min="-3" max="3"></div>
     <div class="row-result" id="r_def_change">—</div>
   </div>
   <div class="row">
@@ -208,8 +252,13 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <div class="card-header step1">斬体ダメージ</div>
   <div class="row">
     <div class="row-label">斬体倍率（%）</div>
-    <div class="row-input"><input type="number" id="slash" value="89"></div>
+    <div class="row-input"><input type="number" id="slash" value="70"></div>
     <div class="row-result" id="r_E11">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">その他斬体倍率補正（%）<small>フウラ、心珠(分身の術)など</small></div>
+    <div class="row-input"><input type="number" id="slash_other" value="7" min="0"></div>
+    <div class="row-result" id="r_slash_other">—</div>
   </div>
   <div class="row">
     <div class="row-label">スキルダメージアップ（段数）<small>ラーミアなど　1段階=20%</small></div>
@@ -246,7 +295,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result" id="r_E13">—</div>
   </div>
   <div class="row divider">
-    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+スキルUP+斬体UP+おうえん)/100</small></div>
+    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+その他斬体+スキルUP+斬体UP+おうえん)/100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key step1" id="r_E14">—</div>
   </div>
@@ -256,8 +305,11 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 <div class="card">
   <div class="card-header step1">属性ダメージ</div>
   <div class="row">
-    <div class="row-label">属性倍率（%）</div>
-    <div class="row-input"><input type="number" id="attr" value="25"></div>
+    <div class="row-label">属性倍率（%）<small id="force_label" style="display:none;color:#c05000;">フォース適用: ÷2切り捨て後にT倍率</small></div>
+    <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#555;white-space:nowrap;cursor:pointer;padding:0 4px 0 6px;flex-shrink:0;">
+      <input type="checkbox" id="force_check" style="width:14px;height:14px;cursor:pointer;" checked>フォース
+    </label>
+    <div class="row-input"><input type="number" id="attr" value="79"></div>
     <div class="row-result" id="r_E15">—</div>
   </div>
   <div class="row">
@@ -267,7 +319,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   </div>
   <div class="row">
     <div class="row-label">フォースブラスト（%）</div>
-    <div class="row-input"><input type="number" id="fb" value="125"></div>
+    <div class="row-input"><input type="number" id="fb" value="0"></div>
     <div class="row-result" id="r_E17">—</div>
   </div>
   <div class="row divider">
@@ -309,11 +361,11 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-label">敵テンション<small>耐性補正に連動</small></div>
     <div class="row-input">
       <select id="tension_enemy">
-        <option value="50">100 → +50%</option>
+        <option value="50" selected>100 → +50%</option>
         <option value="30">50 → +30%</option>
         <option value="20">20 → +20%</option>
         <option value="10">5 → +10%</option>
-        <option value="0" selected>0 → 0%</option>
+        <option value="0">0 → 0%</option>
         <option value="-10">-5 → -10%</option>
         <option value="-20">-20 → -20%</option>
         <option value="-30">-50 → -30%</option>
@@ -329,12 +381,12 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <div class="card-header">耐性補正</div>
   <div class="row">
     <div class="row-label star">★ 斬体耐性（%）<small>(100 − 入力%×敵T補正) / 100</small></div>
-    <div class="row-input"><input type="number" id="resist_slash" value="30"></div>
+    <div class="row-input"><input type="number" id="resist_slash" value="40"></div>
     <div class="row-result key step1" id="r_resist_slash">—</div>
   </div>
   <div class="row">
     <div class="row-label star">★ 属性耐性（%）<small>(100 − 入力%×敵T補正) / 100</small></div>
-    <div class="row-input"><input type="number" id="resist_attr" value="0"></div>
+    <div class="row-input"><input type="number" id="resist_attr" value="-25"></div>
     <div class="row-result key step1" id="r_resist_attr">—</div>
   </div>
   <div class="row divider">
@@ -342,7 +394,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-input">
       <select id="inga_kiwami">
         <option value="0">なし</option>
-        <option value="1">あり　+30%</option>
+        <option value="1" selected>あり　+30%</option>
       </select>
     </div>
     <div class="row-result" id="r_inga_kiwami">—</div>
@@ -461,7 +513,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <div class="card-header step1">会心ダメージ</div>
   <div class="row">
     <div class="row-label">会心ダメアップ（%）</div>
-    <div class="row-input"><input type="number" id="crit_up" value="22" min="0"></div>
+    <div class="row-input"><input type="number" id="crit_up" value="12" min="0"></div>
     <div class="row-result" id="r_E26">—</div>
   </div>
   <div class="row">
@@ -505,47 +557,6 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   <span class="step1-text">⑥【第1段階】= floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果(1+段数×20%+極み30%) × (フォースブレイク＋属性耐性変化) × 斬体耐性 × 属性耐性 × 閃き × 会心合計 × 斬体耐性合計 )</span><br>
   <span class="step2-text">⑦【第2段階】最終ダメージ = floor( ⑥ × スキル倍率補正 × きあいため )</span><br>
   ※ 最小は下限基礎値・会心下限%、最大は上限基礎値・会心上限%で同様に計算
-</div>
-
-<!-- 履歴 -->
-<div class="history-box">
-  <div class="card-header">📋 計算結果の保存</div>
-  <div class="history-slot">
-    <div class="history-slot-label">1</div>
-    <div class="history-slot-data">
-      <div class="h-name"><input type="text" id="h1_name" placeholder="メモ（任意）"></div>
-      <div class="h-nums empty" id="h1_nums">未保存</div>
-    </div>
-    <div class="history-slot-btns">
-      <button class="h-btn save"  onclick="historySave(1)">保存</button>
-      <button class="h-btn load"  onclick="historyLoad(1)" id="h1_load" disabled>呼出</button>
-      <button class="h-btn clear" onclick="historyClear(1)" id="h1_clear" disabled>消去</button>
-    </div>
-  </div>
-  <div class="history-slot">
-    <div class="history-slot-label">2</div>
-    <div class="history-slot-data">
-      <div class="h-name"><input type="text" id="h2_name" placeholder="メモ（任意）"></div>
-      <div class="h-nums empty" id="h2_nums">未保存</div>
-    </div>
-    <div class="history-slot-btns">
-      <button class="h-btn save"  onclick="historySave(2)">保存</button>
-      <button class="h-btn load"  onclick="historyLoad(2)" id="h2_load" disabled>呼出</button>
-      <button class="h-btn clear" onclick="historyClear(2)" id="h2_clear" disabled>消去</button>
-    </div>
-  </div>
-  <div class="history-slot">
-    <div class="history-slot-label">3</div>
-    <div class="history-slot-data">
-      <div class="h-name"><input type="text" id="h3_name" placeholder="メモ（任意）"></div>
-      <div class="h-nums empty" id="h3_nums">未保存</div>
-    </div>
-    <div class="history-slot-btns">
-      <button class="h-btn save"  onclick="historySave(3)">保存</button>
-      <button class="h-btn load"  onclick="historyLoad(3)" id="h3_load" disabled>呼出</button>
-      <button class="h-btn clear" onclick="historyClear(3)" id="h3_clear" disabled>消去</button>
-    </div>
-  </div>
 </div>
 
 <!-- 最終結果（sticky） -->
@@ -613,12 +624,16 @@ function calc() {
   const E10 = 1 + ally_pct / 100;
 
   const E11 = Math.floor(n('slash') * E10);       // 斬体倍率%：整数切り捨て
+  const slashOther = n('slash_other');             // その他斬体倍率補正%
   const E12 = n('skill_up');
   const slashUp = n('slash_up');
   const E13 = n('cheer');
-  const E14 = Math.floor((100 + E11 + E12 + slashUp + E13) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
+  const E14 = Math.floor((100 + E11 + slashOther + E12 + slashUp + E13) / 100 * 1000) / 1000;
 
-  const E15 = Math.floor(n('attr') * E10);         // 属性倍率%：整数切り捨て
+  const forceCheck = document.getElementById('force_check').checked;
+  const attrRaw = forceCheck ? Math.floor(n('attr') / 2) : n('attr');  // フォースあり: ÷2切り捨て
+  const E15 = Math.floor(attrRaw * E10);         // 属性倍率%：テンション倍率適用後整数切り捨て
+  document.getElementById('force_label').style.display = forceCheck ? 'block' : 'none';
   const E16 = n('fc') * 30;
   const E17 = n('fb');
   const E18 = Math.floor((100 + E15 + E16 + E17) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
@@ -712,6 +727,7 @@ function calc() {
   $('r_E10').textContent = '×' + E10.toFixed(2);
   $('r_tension_enemy').textContent = (enemy_pct >= 0 ? '+' : '') + enemy_pct + '%';
   $('r_E11').textContent = fd(E11);
+  $('r_slash_other').textContent = '+' + fi(slashOther);
   $('r_E12').textContent = E12;
   $('r_slash_up').textContent = slashUp;
   $('r_E13').textContent = E13;
@@ -759,7 +775,8 @@ function lsSave() {
   const values = {};
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
-    if (el) values[id] = el.value;
+    if (!el) return;
+    values[id] = el.type === 'checkbox' ? el.checked : el.value;
   });
   try { localStorage.setItem(LS_KEY, JSON.stringify(values)); } catch(e) {}
 }
@@ -771,7 +788,9 @@ function lsLoad() {
     const values = JSON.parse(saved);
     INPUT_IDS.forEach(id => {
       const el = document.getElementById(id);
-      if (el && values[id] !== undefined) el.value = values[id];
+      if (!el || values[id] === undefined) return;
+      if (el.type === 'checkbox') el.checked = values[id];
+      else el.value = values[id];
     });
   } catch(e) {}
 }
@@ -781,8 +800,8 @@ const INPUT_IDS = [
   'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
   'tension_ally',
-  'slash','skill_up','slash_up','cheer',
-  'attr','fc','fb',
+  'slash','slash_other','skill_up','slash_up','cheer',
+  'attr','force_check','fc','fb',
   'keitou','meishou',
   'tension_enemy',
   'resist_slash','resist_attr',
@@ -791,8 +810,17 @@ const INPUT_IDS = [
   'crit_up','crit_type'
 ];
 
+// バージョンが変わったらlocalStorageをクリアしてデフォルト値を使う
+const LS_VERSION = 'dqw_calc_v3';
+if (!localStorage.getItem(LS_VERSION)) {
+  localStorage.removeItem(LS_KEY);
+  localStorage.removeItem('dqw_calc_slots');
+  localStorage.setItem(LS_VERSION, '1');
+}
+
 lsLoad();
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => { calc(); lsSave(); }));
+document.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener('change', () => { calc(); lsSave(); }));
 calc();
 
 // ===== 履歴スロット =====
@@ -840,7 +868,8 @@ function historySave(i) {
   const values = {};
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
-    if (el) values[id] = el.value;
+    if (!el) return;
+    values[id] = el.type === 'checkbox' ? el.checked : el.value;
   });
   slots[i] = { min, mid, max, name, values };
   historyUpdateUI(i);
@@ -852,7 +881,9 @@ function historyLoad(i) {
   if (!s) return;
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
-    if (el && s.values[id] !== undefined) el.value = s.values[id];
+    if (!el || s.values[id] === undefined) return;
+    if (el.type === 'checkbox') el.checked = s.values[id];
+    else el.value = s.values[id];
   });
   calc();
   lsSave();
@@ -865,8 +896,46 @@ function historyClear(i) {
   slotsLsSave();
 }
 
+// ===== デフォルト設定に初期化 =====
+const DEFAULT_VALUES = {
+  atk:'1583', voc:'3', lv:'15', enemy_lvdown:'0', sword:'831',
+  def:'6248', def_change:'-2', direct_hit:'1',
+  skill_pct:'900', skill_bonus_pct:'60',
+  tension_ally:'50',
+  slash:'70', slash_other:'7', skill_up:'40', slash_up:'0', cheer:'80',
+  attr:'79', force_check: true, fc:'4', fb:'0',
+  keitou:'10', meishou:'10',
+  tension_enemy:'50',
+  resist_slash:'40', resist_attr:'-25',
+  inga:'4', inga_kiwami:'1', fbreak:'2', attr_res_change:'0', flash:'1.8', kiai:'2',
+  slash_res_change:'0', suijaku:'0', freeze:'0', senisosshitsu:'0',
+  crit_up:'12', crit_type:'super'
+};
+
+function resetToDefault() {
+  if (!confirm('デフォルト設定に初期化しますか？\n現在の入力値はリセットされます。')) return;
+  INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el || DEFAULT_VALUES[id] === undefined) return;
+    if (el.type === 'checkbox') el.checked = DEFAULT_VALUES[id];
+    else el.value = DEFAULT_VALUES[id];
+  });
+  calc();
+  lsSave();
+}
+
 // 履歴スロットを復元してUIに反映
 slotsLsLoad();
+
+// スロット1が未保存の場合のみデフォルト値（オルゴデミーラ設定）を初期設定
+if (!slots[1]) {
+  const min = document.getElementById('result_min').textContent;
+  const mid = document.getElementById('result').textContent;
+  const max = document.getElementById('result_max').textContent;
+  slots[1] = { name: 'オルゴデミーラ', min, mid, max, values: DEFAULT_VALUES };
+  slotsLsSave();
+}
+
 [1,2,3].forEach(i => historyUpdateUI(i));
 </script>
 </body>
