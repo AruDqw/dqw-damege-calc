@@ -294,8 +294,29 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     </div>
     <div class="row-result" id="r_E13">—</div>
   </div>
+  <div class="row">
+    <div class="row-label">ゾーン</div>
+    <div class="row-input">
+      <select id="zone_slash">
+        <option value="0" selected>なし　+0%</option>
+        <option value="45">れんけい　+45%</option>
+        <option value="150">ゴドハン　+150%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_slash">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">会心必中</div>
+    <div class="row-input">
+      <select id="hisshu">
+        <option value="0" selected>なし　+0%</option>
+        <option value="50">あり　+50%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_hisshu">—</div>
+  </div>
   <div class="row divider">
-    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+その他斬体+スキルUP+斬体UP+おうえん)/100</small></div>
+    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+その他斬体+スキルUP+斬体UP+おうえん+ゾーン+会心必中)/100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key step1" id="r_E14">—</div>
   </div>
@@ -528,6 +549,17 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     </div>
     <div class="row-result" id="r_crit_in">—</div>
   </div>
+  <div class="row">
+    <div class="row-label">ゾーン</div>
+    <div class="row-input">
+      <select id="zone_crit">
+        <option value="0" selected>なし　+0%</option>
+        <option value="69">れんけい　+69%</option>
+        <option value="230">大魔導士　+230%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_crit">—</div>
+  </div>
   <div class="row divider">
     <div class="row-label star">★ 会心合計<small>会心ダメアップ × 会心% / 100</small></div>
     <div class="row-spacer"></div>
@@ -556,7 +588,9 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   &emsp;斬体耐性合計 = (100 + 斬体耐性変化 + 衰弱 + 凍結 + 戦意喪失) / 100<br>
   <span class="step1-text">⑥【第1段階】= floor( 基礎値 × スキル倍率 × 斬体合計 × 属性合計 × 系統合計 × 名称合計 × 因果(1+段数×20%+極み30%) × (フォースブレイク＋属性耐性変化) × 斬体耐性 × 属性耐性 × 閃き × 会心合計 × 斬体耐性合計 )</span><br>
   <span class="step2-text">⑦【第2段階】最終ダメージ = floor( ⑥ × スキル倍率補正 × きあいため )</span><br>
-  ※ 最小は下限基礎値・会心下限%、最大は上限基礎値・会心上限%で同様に計算
+  ※ 最小は下限基礎値・会心下限%、最大は上限基礎値・会心上限%で同様に計算<br>
+  <br>
+  🔗 <a href="https://github.com/arudqw/dqw-damege-calc" target="_blank" style="color:#1a6ab1;">https://github.com/arudqw/dqw-damege-calc</a>
 </div>
 
 <!-- 最終結果（sticky） -->
@@ -628,7 +662,9 @@ function calc() {
   const E12 = n('skill_up');
   const slashUp = n('slash_up');
   const E13 = n('cheer');
-  const E14 = Math.floor((100 + E11 + slashOther + E12 + slashUp + E13) / 100 * 1000) / 1000;
+  const zoneSlash = parseFloat($('zone_slash').value);  // ゾーン（斬体）
+  const hisshu = parseFloat($('hisshu').value);          // 会心必中
+  const E14 = Math.floor((100 + E11 + slashOther + E12 + slashUp + E13 + zoneSlash + hisshu) / 100 * 1000) / 1000;
 
   const forceCheck = document.getElementById('force_check').checked;
   const attrRaw = forceCheck ? Math.floor(n('attr') / 2) : n('attr');  // フォースあり: ÷2切り捨て
@@ -673,11 +709,13 @@ function calc() {
     critMid = 250; critMin = 230; critMax = 270;
   }
 
+  const zoneCrit = parseFloat($('zone_crit').value);  // ゾーン（会心）
+
   // 通常攻撃時は会心ダメアップ無効・閃き無効（強制1.0）
-  const E26     = isNormal ? 1.0 : (critMid + crit_up_pct) / 100;
+  const E26     = isNormal ? 1.0 : (critMid + crit_up_pct + zoneCrit) / 100;
   const E27     = E26;
-  const E27_min = isNormal ? 1.0 : (critMin + crit_up_pct) / 100;
-  const E27_max = isNormal ? 1.0 : (critMax + crit_up_pct) / 100;
+  const E27_min = isNormal ? 1.0 : (critMin + crit_up_pct + zoneCrit) / 100;
+  const E27_max = isNormal ? 1.0 : (critMax + crit_up_pct + zoneCrit) / 100;
   const E24eff  = isNormal ? 1.0 : parseFloat($('flash').value);
 
   // スキル倍率と補正は別々に扱う
@@ -731,6 +769,8 @@ function calc() {
   $('r_E12').textContent = E12;
   $('r_slash_up').textContent = slashUp;
   $('r_E13').textContent = E13;
+  $('r_zone_slash').textContent = '+' + zoneSlash + '%';
+  $('r_hisshu').textContent = '+' + hisshu + '%';
   $('r_E14').textContent = fd(E14);
   $('r_E15').textContent = fd(E15);
   $('r_E16').textContent = E16;
@@ -751,6 +791,7 @@ function calc() {
   $('r_E24').textContent = fd(E24eff);
   $('r_E25').textContent = fd(E25);
   $('r_E26').textContent = fd(E26);
+  $('r_zone_crit').textContent = '+' + zoneCrit + '%';
   $('r_slash_res_change').textContent = (slashResChange >= 0 ? '+' : '') + slashResChange + '%';
   $('r_suijaku').textContent       = '+' + suijaku + '%';
   $('r_freeze').textContent        = '+' + freeze + '%';
@@ -800,18 +841,18 @@ const INPUT_IDS = [
   'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
   'tension_ally',
-  'slash','slash_other','skill_up','slash_up','cheer',
+  'slash','slash_other','skill_up','slash_up','cheer','zone_slash','hisshu',
   'attr','force_check','fc','fb',
   'keitou','meishou',
   'tension_enemy',
   'resist_slash','resist_attr',
   'inga','inga_kiwami','fbreak','attr_res_change','flash','kiai',
   'slash_res_change','suijaku','freeze','senisosshitsu',
-  'crit_up','crit_type'
+  'crit_up','crit_type','zone_crit'
 ];
 
 // バージョンが変わったらlocalStorageをクリアしてデフォルト値を使う
-const LS_VERSION = 'dqw_calc_v3';
+const LS_VERSION = 'dqw_calc_v4';
 if (!localStorage.getItem(LS_VERSION)) {
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem('dqw_calc_slots');
