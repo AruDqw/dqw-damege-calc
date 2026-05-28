@@ -229,9 +229,9 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   </div>
 </div>
 
-<!-- テンション -->
+<!-- テンション/ゾーン -->
 <div class="card">
-  <div class="card-header">テンション</div>
+  <div class="card-header">テンション/ゾーン</div>
   <div class="row">
     <div class="row-label">味方テンション</div>
     <div class="row-input">
@@ -244,6 +244,16 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
       </select>
     </div>
     <div class="row-result" id="r_E10">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">ゾーン<small>ありの場合はテンション100扱い（T=×1.5固定）</small></div>
+    <div class="row-input">
+      <select id="zone_tension">
+        <option value="0" selected>なし　+0%</option>
+        <option value="50">あり　+50%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_tension">—</div>
   </div>
 </div>
 
@@ -295,12 +305,12 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result" id="r_E13">—</div>
   </div>
   <div class="row">
-    <div class="row-label">ゾーン</div>
+    <div class="row-label">ゾーン（ゴドハン、ドラゴン、時渡り）</div>
     <div class="row-input">
       <select id="zone_slash">
         <option value="0" selected>なし　+0%</option>
         <option value="45">れんけい　+45%</option>
-        <option value="150">ゴドハン　+150%</option>
+        <option value="150">職業　+150%</option>
       </select>
     </div>
     <div class="row-result" id="r_zone_slash">—</div>
@@ -340,11 +350,27 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   </div>
   <div class="row">
     <div class="row-label">フォースブラスト（%）</div>
-    <div class="row-input"><input type="number" id="fb" value="0"></div>
+    <div class="row-input">
+      <select id="fb">
+        <option value="0" selected>なし　+0%</option>
+        <option value="125">あり　+125%</option>
+      </select>
+    </div>
     <div class="row-result" id="r_E17">—</div>
   </div>
+  <div class="row">
+    <div class="row-label">ゾーン（魔剣士、天地雷鳴士）<small id="zone_attr_force_note" style="display:none;color:#c05000;">フォース適用: ゾーン値÷2切り捨て</small></div>
+    <div class="row-input">
+      <select id="zone_attr">
+        <option value="0" selected>なし　+0%</option>
+        <option value="45">れんけい　+45%</option>
+        <option value="150">職業　+150%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_attr">—</div>
+  </div>
   <div class="row divider">
-    <div class="row-label star">★ 属性合計<small>(100+属性×T+FC×30+FB)/100</small></div>
+    <div class="row-label star">★ 属性合計<small>(100+属性×T+FC×30+FB+ゾーン)/100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key step1" id="r_E18">—</div>
   </div>
@@ -550,12 +576,12 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result" id="r_crit_in">—</div>
   </div>
   <div class="row">
-    <div class="row-label">ゾーン</div>
+    <div class="row-label">ゾーン（大魔導士、魔人）</div>
     <div class="row-input">
       <select id="zone_crit">
         <option value="0" selected>なし　+0%</option>
         <option value="69">れんけい　+69%</option>
-        <option value="230">大魔導士　+230%</option>
+        <option value="230">職業　+230%</option>
       </select>
     </div>
     <div class="row-result" id="r_zone_crit">—</div>
@@ -655,7 +681,10 @@ function calc() {
   const E8 = (skill_pct / 100) * (1 + skill_bonus_pct / 100);
   const ally_pct = parseFloat($('tension_ally').value);
   const enemy_pct = parseFloat($('tension_enemy').value);
-  const E10 = 1 + ally_pct / 100;
+  const zone_tension = parseFloat($('zone_tension').value);
+  // ゾーンありの場合はテンション100固定（+50%）、なしの場合は味方テンション選択値を使用
+  const effective_ally_pct = zone_tension > 0 ? 50 : ally_pct;
+  const E10 = 1 + effective_ally_pct / 100;
 
   const E11 = Math.floor(n('slash') * E10);       // 斬体倍率%：整数切り捨て
   const slashOther = n('slash_other');             // その他斬体倍率補正%
@@ -671,8 +700,12 @@ function calc() {
   const E15 = Math.floor(attrRaw * E10);         // 属性倍率%：テンション倍率適用後整数切り捨て
   document.getElementById('force_label').style.display = forceCheck ? 'block' : 'none';
   const E16 = n('fc') * 30;
-  const E17 = n('fb');
-  const E18 = Math.floor((100 + E15 + E16 + E17) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
+  const E17 = parseFloat($('fb').value);
+  // 属性ゾーン：フォースありの場合はゾーン値÷2切り捨て
+  const zoneAttrRaw = parseFloat($('zone_attr').value);
+  const zoneAttrVal = forceCheck ? Math.floor(zoneAttrRaw / 2) : zoneAttrRaw;
+  document.getElementById('zone_attr_force_note').style.display = (forceCheck && zoneAttrRaw > 0) ? 'block' : 'none';
+  const E18 = Math.floor((100 + E15 + E16 + E17 + zoneAttrVal) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
 
   const raw_slash = n('resist_slash');
   const raw_attr  = n('resist_attr');
@@ -763,6 +796,7 @@ function calc() {
   $('r_skill_pct').textContent = fd(skill_mult);
   $('r_skill_bonus_pct').textContent = fd(skill_bonus_mult);
   $('r_E10').textContent = '×' + E10.toFixed(2);
+  $('r_zone_tension').textContent = zone_tension > 0 ? '→ T=×1.50' : '—';
   $('r_tension_enemy').textContent = (enemy_pct >= 0 ? '+' : '') + enemy_pct + '%';
   $('r_E11').textContent = fd(E11);
   $('r_slash_other').textContent = '+' + fi(slashOther);
@@ -775,6 +809,7 @@ function calc() {
   $('r_E15').textContent = fd(E15);
   $('r_E16').textContent = E16;
   $('r_E17').textContent = E17;
+  $('r_zone_attr').textContent = forceCheck && zoneAttrRaw > 0 ? '+' + zoneAttrVal + '% (÷2)' : '+' + zoneAttrVal + '%';
   $('r_E18').textContent = fd(E18);
   $('r_resist_slash').textContent = fd(resist_slash) + '\n(' + effective_slash_pct + '%)';
   $('r_resist_attr').textContent  = fd(resist_attr)  + '\n(' + effective_attr_pct + '%)';
@@ -840,9 +875,9 @@ function lsLoad() {
 const INPUT_IDS = [
   'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
-  'tension_ally',
+  'tension_ally','zone_tension',
   'slash','slash_other','skill_up','slash_up','cheer','zone_slash','hisshu',
-  'attr','force_check','fc','fb',
+  'attr','force_check','fc','fb','zone_attr',
   'keitou','meishou',
   'tension_enemy',
   'resist_slash','resist_attr',
@@ -852,7 +887,7 @@ const INPUT_IDS = [
 ];
 
 // バージョンが変わったらlocalStorageをクリアしてデフォルト値を使う
-const LS_VERSION = 'dqw_calc_v4';
+const LS_VERSION = 'dqw_calc_v5';
 if (!localStorage.getItem(LS_VERSION)) {
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem('dqw_calc_slots');
@@ -942,9 +977,9 @@ const DEFAULT_VALUES = {
   atk:'1583', voc:'3', lv:'15', enemy_lvdown:'0', sword:'831',
   def:'6248', def_change:'-2', direct_hit:'1',
   skill_pct:'900', skill_bonus_pct:'60',
-  tension_ally:'50',
+  tension_ally:'50', zone_tension:'0',
   slash:'70', slash_other:'7', skill_up:'40', slash_up:'0', cheer:'80',
-  attr:'79', force_check: true, fc:'4', fb:'0',
+  attr:'79', force_check: true, fc:'4', fb:'0', zone_attr:'0',
   keitou:'10', meishou:'10',
   tension_enemy:'50',
   resist_slash:'40', resist_attr:'-25',
