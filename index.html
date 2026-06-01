@@ -173,12 +173,12 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 <div class="job-card">
   <div class="card-header">⚔️ 職業選択</div>
   <div class="job-selector">
-    <button class="job-btn" id="job_makentou" onclick="setJob('makentou')">魔剣士</button>
+    <button class="job-btn active" id="job_makentou" onclick="setJob('makentou')">魔剣士</button>
     <button class="job-btn" id="job_majin"    onclick="setJob('majin')">魔人</button>
     <button class="job-btn" id="job_godhan"   onclick="setJob('godhan')">ゴドハン</button>
-    <button class="job-btn active" id="job_other" onclick="setJob('other')">その他</button>
+    <button class="job-btn" id="job_all"      onclick="setJob('all')">ALL</button>
   </div>
-  <div class="job-note">職業を選ぶと非対応の補正値を自動で無効化します</div>
+  <div class="job-note">職業を選ぶと非対応の補正値を自動で無効化します（ALLはすべて表示）</div>
 </div>
 
 <!-- 攻撃力・基礎値 -->
@@ -413,13 +413,35 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 <!-- 系統・名称ダメージ -->
 <div class="card">
   <div class="card-header step1">系統・名称ダメージ</div>
+  <div class="row" id="row_nezetsu">
+    <div class="row-label">根絶やし<small>魔人専用</small></div>
+    <div class="row-input">
+      <select id="nezetsu">
+        <option value="0" selected>なし　+0%</option>
+        <option value="300">あり　+300%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_nezetsu">—</div>
+  </div>
+  <div class="row" id="row_nezetsu_mind">
+    <div class="row-label">根絶やしマインド<small>魔人専用</small></div>
+    <div class="row-input">
+      <select id="nezetsu_mind">
+        <option value="0" selected>+0%</option>
+        <option value="60">+60%</option>
+        <option value="120">+120%</option>
+        <option value="180">+180%</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_nezetsu_mind">—</div>
+  </div>
   <div class="row">
     <div class="row-label">系統倍率（%）</div>
     <div class="row-input"><input type="number" id="keitou" value="10"></div>
     <div class="row-result" id="r_keitou_in">—</div>
   </div>
   <div class="row divider">
-    <div class="row-label star">★ 系統合計<small>(系統%×T + 100) / 100</small></div>
+    <div class="row-label star">★ 系統合計<small>(系統% × (T + 根絶やし%) + 100) / 100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key step1" id="r_E20">—</div>
   </div>
@@ -723,19 +745,77 @@ const JOB_EXCLUSIVE = {
     { rowId: 'row_inga',       fieldId: 'inga',        zero: '0' },
   ],
   majin: [
-    { rowId: 'row_tsukon',     fieldId: 'tsukon',      zero: '0' },
-    { rowId: 'card_nitouryuu', fieldId: 'nitouryuu',   zero: '100' },
+    { rowId: 'row_tsukon',      fieldId: 'tsukon',       zero: '0' },
+    { rowId: 'card_nitouryuu',  fieldId: 'nitouryuu',    zero: '100' },
+    { rowId: 'row_nezetsu',     fieldId: 'nezetsu',      zero: '0' },
+    { rowId: 'row_nezetsu_mind',fieldId: 'nezetsu_mind', zero: '0' },
   ]
 };
 
-// 職業ごとの値キャッシュ（各職業選択時の値を保存）
-const jobCache = { makentou: {}, majin: {}, godhan: {}, other: {} };
+// 職業ごとの値キャッシュは不要（DOMに値を保持するため）
 
-function _saveJobCache(job) {
-  // jobに専用項目がある場合、現在の値をキャッシュ
-  (JOB_EXCLUSIVE[job] || []).forEach(({ fieldId }) => {
-    const el = document.getElementById(fieldId);
-    if (el) jobCache[job][fieldId] = el.value;
+// 職業ごとのゾーン制限定義
+// own: その職業が属するゾーン → 150/195(or230/299)が選択可
+// other: その職業が属さないゾーン → 150/195(or230/299)はdisabled、選択中なら0/45(or0/69)に書き換え
+const ZONE_RULES = {
+  //          selectId      ownValues(職業ありで選択可)  otherValues(職業なしで使用不可→fallback)
+  slash: { id: 'zone_slash', own: ['150','195'], other: { '150':'0', '195':'45' } },
+  attr:  { id: 'zone_attr',  own: ['150','195'], other: { '150':'0', '195':'45' } },
+  crit:  { id: 'zone_crit',  own: ['230','299'], other: { '230':'0', '299':'69' } },
+};
+
+// 職業ごとに「どのゾーンが自職業か」を定義
+const JOB_OWN_ZONES = {
+  makentou: ['attr'],          // ゾーン（魔剣士、天地雷鳴士）
+  majin:    ['crit'],          // ゾーン（大魔導士、魔人）
+  godhan:   ['slash'],         // ゾーン（ゴドハン、ドラゴン、時渡り）
+  all:      ['slash','attr','crit'], // 全て選択可
+};
+
+function _applyZoneRestrictions(job) {
+  const ownZones = JOB_OWN_ZONES[job] || [];
+  const zoneOn = document.getElementById('zone_tension').value !== '0';
+
+  // ゾーンあり→なし の書き換えマップ（自職業ゾーンがゾーンなしに切り替わったとき）
+  const ownOff = { slash: { '150':'0', '195':'45' },
+                   attr:  { '150':'0', '195':'45' },
+                   crit:  { '230':'0', '299':'69'  } };
+  // ゾーンなし→あり の書き換えマップ（自職業ゾーンがゾーンありに切り替わったとき）
+  const ownOn  = { slash: { '0':'150', '45':'195' },
+                   attr:  { '0':'150', '45':'195' },
+                   crit:  { '0':'230', '69':'299'  } };
+
+  Object.entries(ZONE_RULES).forEach(([key, rule]) => {
+    const sel = document.getElementById(rule.id);
+    if (!sel) return;
+
+    // ALL: disabled解除のみ、値の書き換えなし
+    if (job === 'all') {
+      Array.from(sel.options).forEach(opt => { opt.disabled = false; });
+      return;
+    }
+
+    const isOwn = ownZones.includes(key);
+
+    // disabled制御
+    Array.from(sel.options).forEach(opt => {
+      if (rule.own.includes(opt.value)) {
+        opt.disabled = !isOwn;
+      }
+    });
+
+    if (isOwn) {
+      // 自職業ゾーン: zone_tensionのon/offに応じて値を同期
+      const map = zoneOn ? ownOn[key] : ownOff[key];
+      if (map && map[sel.value] !== undefined) {
+        sel.value = map[sel.value];
+      }
+    } else {
+      // 他職業ゾーン: 職業ボーナス値が選ばれていたら除去
+      if (rule.other[sel.value] !== undefined) {
+        sel.value = rule.other[sel.value];
+      }
+    }
   });
 }
 
@@ -748,42 +828,41 @@ function _applyJobVisibility(job) {
     });
   });
 
-  // 選択職業以外の専用項目を非表示にし、値を0にする
+  if (job === 'all') return; // ALL は全表示のまま値も変えない
+
+  // 選択職業以外の専用項目を非表示にする（値はDOMに残す）
   Object.entries(JOB_EXCLUSIVE).forEach(([j, items]) => {
-    if (j === job) return; // 選択職業はそのまま
-    items.forEach(({ rowId, fieldId, zero }) => {
+    if (j === job) return;
+    items.forEach(({ rowId }) => {
       const rowEl = document.getElementById(rowId);
       if (rowEl) rowEl.style.display = 'none';
-      const fieldEl = document.getElementById(fieldId);
-      if (fieldEl) fieldEl.value = zero;
     });
-  });
-
-  // 選択職業の専用項目: キャッシュがあれば復元
-  (JOB_EXCLUSIVE[job] || []).forEach(({ fieldId }) => {
-    const el = document.getElementById(fieldId);
-    if (el && jobCache[job][fieldId] !== undefined) {
-      el.value = jobCache[job][fieldId];
-    }
   });
 }
 
 function setJob(job) {
-  // 切り替え前に現在の職業の専用値を保存
-  _saveJobCache(currentJob);
-
   currentJob = job;
 
   // ボタンのactive切り替え
-  ['makentou','majin','godhan','other'].forEach(j => {
+  ['makentou','majin','godhan','all'].forEach(j => {
     document.getElementById('job_' + j).classList.toggle('active', j === job);
   });
 
-  // 表示・非表示と値の適用
   _applyJobVisibility(job);
+  _applyZoneRestrictions(job);
 
   calc();
   lsSave();
+}
+
+// 非表示の職業専用項目はzero値として読む
+function nJob(fieldId) {
+  const jobDef = Object.values(JOB_EXCLUSIVE).flat().find(d => d.fieldId === fieldId);
+  if (jobDef) {
+    const rowEl = document.getElementById(jobDef.rowId);
+    if (rowEl && rowEl.style.display === 'none') return parseFloat(jobDef.zero);
+  }
+  return n(fieldId);
 }
 
 function calc() {
@@ -795,7 +874,7 @@ function calc() {
   const E4 = atkAfterLv - E2;
 
   // 剣魔合一：倍率floor(1.04^n × 100)/100 を求めてから元の値に掛ける
-  const swordBase = n('sword');
+  const swordBase = nJob('sword');
   const E5 = swordBase === 0 ? 0 : Math.floor(swordBase * lvRate);
 
   // 敵のレベルダウン：0.96^段数 を計算し、係数を切り上げ（1段階=96%, 2段階=93%, 10段階=67%）
@@ -839,8 +918,8 @@ function calc() {
   const attrRaw = forceCheck ? Math.floor(n('attr') / 2) : n('attr');  // フォースあり: ÷2切り捨て
   const E15 = Math.floor(attrRaw * E10);         // 属性倍率%：テンション倍率適用後整数切り捨て
   document.getElementById('force_label').style.display = forceCheck ? 'block' : 'none';
-  const E16 = n('fc') * 30;
-  const E17 = parseFloat($('fb').value);
+  const E16 = nJob('fc') * 30;
+  const E17 = nJob('fb');
   // 属性ゾーン：フォースありの場合はゾーン値÷2切り捨て
   const zoneAttrRaw = parseFloat($('zone_attr').value);
   const zoneAttrVal = forceCheck ? Math.floor(zoneAttrRaw / 2) : zoneAttrRaw;
@@ -856,12 +935,18 @@ function calc() {
   const resist_slash = (100 - effective_slash_pct) / 100;
   const resist_attr  = (100 - effective_attr_pct)  / 100;
 
-  const keitou_pct = Math.floor(n('keitou') * E10);  // 系統倍率%：整数切り捨て
+  const nezetsu_pct      = nJob('nezetsu');
+  const nezetsu_mind_pct = nJob('nezetsu_mind');
+  const nezetsu_total    = nezetsu_pct + nezetsu_mind_pct;
+  const keitou_raw  = n('keitou');
   const meishou_pct = Math.floor(n('meishou') * E10); // 名称倍率%：整数切り捨て
-  const E20 = Math.floor((keitou_pct + 100) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
+  // 系統倍率%：テンション加算分に根絶やしを加えてから掛ける
+  // keitou% × (T + 根絶やし%) → floor( keitou_raw × (E10 + nezetsu_total/100) )
+  const keitou_pct = Math.floor(keitou_raw * (E10 + nezetsu_total / 100));
+  const E20 = Math.floor((keitou_pct + 100) / 100 * 1000) / 1000;
   const E21 = Math.floor((meishou_pct + 100) / 100 * 1000) / 1000; // 倍率：小数第3位切り捨て
-  const ingaKiwami = parseFloat($('inga_kiwami').value);
-  const E22 = 1 + (n('inga') * 20 + ingaKiwami * 30) / 100;
+  const ingaKiwami = nJob('inga_kiwami');
+  const E22 = 1 + (nJob('inga') * 20 + ingaKiwami * 30) / 100;
   const attrResChangeSteps = n('attr_res_change');
   const E23 = 1 + (n('fbreak') * 30 - attrResChangeSteps * 20) / 100;
   const E24 = parseFloat($('flash').value);
@@ -883,7 +968,7 @@ function calc() {
   }
 
   const zoneCrit = parseFloat($('zone_crit').value);  // ゾーン（会心）
-  const tsukon = isNormal ? 0 : parseFloat($('tsukon').value); // 痛恨の一撃（通常100%時は0）
+  const tsukon = isNormal ? 0 : nJob('tsukon'); // 痛恨の一撃（通常100%時は0）
 
   // 通常攻撃時は会心ダメアップ無効・閃き無効（強制1.0）
   const E26     = isNormal ? 1.0 : (critMid + crit_up_pct + zoneCrit + tsukon) / 100;
@@ -917,7 +1002,7 @@ function calc() {
   const step2 = (base, crit) => Math.floor(step1(base, crit) * skill_bonus_mult * E25);
 
   // 第3段階: 二刀流補正を掛けて切り上げ
-  const nitouryuu_pct = n('nitouryuu');
+  const nitouryuu_pct = nJob('nitouryuu');
   const nitouryuu_mult = nitouryuu_pct / 100;
   const step3 = (base, crit) => Math.ceil(step2(base, crit) * nitouryuu_mult);
 
@@ -959,12 +1044,14 @@ function calc() {
   $('r_E18').textContent = fd(E18);
   $('r_resist_slash').textContent = fd(resist_slash) + '\n(' + effective_slash_pct + '%)';
   $('r_resist_attr').textContent  = fd(resist_attr)  + '\n(' + effective_attr_pct + '%)';
+  $('r_nezetsu').textContent      = '+' + nezetsu_pct + '%';
+  $('r_nezetsu_mind').textContent = '+' + nezetsu_mind_pct + '%';
   $('r_keitou_in').textContent = keitou_pct;
   $('r_E20').textContent = fd(E20);
   $('r_meishou_in').textContent = meishou_pct;
   $('r_E21').textContent = fd(E21);
   $('r_inga_kiwami').textContent = ingaKiwami ? '+30%' : '—';
-  $('r_inga_in').textContent = n('inga');
+  $('r_inga_in').textContent = nJob('inga');
   $('r_E22').textContent = fd(E22);
   $('r_fbreak_in').textContent = n('fbreak');
   $('r_attr_res_change_in').textContent = (attrResChangeSteps >= 0 ? '+' : '') + (attrResChangeSteps * -20) + '%';
@@ -1003,7 +1090,6 @@ function lsSave() {
     values[id] = el.type === 'checkbox' ? el.checked : el.value;
   });
   values['_job'] = currentJob;
-  values['_jobCache'] = jobCache;
   try { localStorage.setItem(LS_KEY, JSON.stringify(values)); } catch(e) {}
 }
 
@@ -1018,17 +1104,14 @@ function lsLoad() {
       if (el.type === 'checkbox') el.checked = values[id];
       else el.value = values[id];
     });
-    // jobキャッシュを復元
-    if (values['_jobCache']) {
-      Object.assign(jobCache, values['_jobCache']);
-    }
-    // 職業を復元（setJobでvisibilityも適用）
+    // 職業を復元
     const savedJob = values['_job'] || 'makentou';
     currentJob = savedJob;
-    ['makentou','majin','godhan','other'].forEach(j => {
+    ['makentou','majin','godhan','all'].forEach(j => {
       document.getElementById('job_' + j).classList.toggle('active', j === savedJob);
     });
     _applyJobVisibility(savedJob);
+    _applyZoneRestrictions(savedJob);
   } catch(e) {}
 }
 
@@ -1040,6 +1123,7 @@ const INPUT_IDS = [
   'slash','slash_other','skill_up','slash_up','cheer','zone_slash','hisshu',
   'attr','force_check','fc','fb','zone_attr',
   'keitou','meishou',
+  'nezetsu','nezetsu_mind',
   'tension_enemy',
   'resist_slash','resist_attr',
   'inga','inga_kiwami','fbreak','attr_res_change','flash','kiai',
@@ -1049,26 +1133,31 @@ const INPUT_IDS = [
 ];
 
 // バージョンが変わったらlocalStorageをクリアしてデフォルト値を使う
-const LS_VERSION = 'dqw_calc_v8';
+const LS_VERSION = 'dqw_calc_v13';
 if (!localStorage.getItem(LS_VERSION)) {
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem('dqw_calc_slots');
   localStorage.setItem(LS_VERSION, '1');
 }
 
-// 初回（localStorageなし）は魔剣士キャッシュをデフォルト値で初期化しボタンをactive化
+// 初回（localStorageなし）はボタン表示を魔剣士に合わせる
 if (!localStorage.getItem(LS_KEY)) {
-  jobCache['makentou'] = { sword:'831', fc:'4', fb:'0', inga_kiwami:'1', inga:'4' };
-  jobCache['majin']    = { tsukon:'0', nitouryuu:'100' };
   document.getElementById('job_makentou').classList.add('active');
-  document.getElementById('job_other').classList.remove('active');
+  document.getElementById('job_all').classList.remove('active');
 }
 
 lsLoad();
-// 常に現在の職業のvisibilityを適用
+// 常に現在の職業のvisibility・ゾーン制限を適用
 _applyJobVisibility(currentJob);
+_applyZoneRestrictions(currentJob);
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => { calc(); lsSave(); }));
 document.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener('change', () => { calc(); lsSave(); }));
+// zone_tension変更時にゾーン制限を再適用してから計算
+document.getElementById('zone_tension').addEventListener('change', () => {
+  _applyZoneRestrictions(currentJob);
+  calc();
+  lsSave();
+});
 calc();
 
 // ===== 履歴スロット =====
@@ -1120,7 +1209,6 @@ function historySave(i) {
     values[id] = el.type === 'checkbox' ? el.checked : el.value;
   });
   values['_job'] = currentJob;
-  values['_jobCache'] = JSON.parse(JSON.stringify(jobCache)); // deep copy
   slots[i] = { min, mid, max, name, values };
   historyUpdateUI(i);
   slotsLsSave();
@@ -1135,13 +1223,13 @@ function historyLoad(i) {
     if (el.type === 'checkbox') el.checked = s.values[id];
     else el.value = s.values[id];
   });
-  if (s.values['_jobCache']) Object.assign(jobCache, s.values['_jobCache']);
   const loadedJob = s.values['_job'] || 'makentou';
   currentJob = loadedJob;
-  ['makentou','majin','godhan','other'].forEach(j => {
+  ['makentou','majin','godhan','all'].forEach(j => {
     document.getElementById('job_' + j).classList.toggle('active', j === loadedJob);
   });
   _applyJobVisibility(loadedJob);
+  _applyZoneRestrictions(loadedJob);
   calc();
   lsSave();
 }
@@ -1163,6 +1251,7 @@ const DEFAULT_VALUES = {
   zone_slash:'0',
   attr:'79', force_check: true, fc:'4', fb:'0', zone_attr:'0',
   keitou:'10', meishou:'10',
+  nezetsu:'0', nezetsu_mind:'0',
   tension_enemy:'50',
   resist_slash:'40', resist_attr:'-25',
   inga:'4', inga_kiwami:'1', fbreak:'2', attr_res_change:'0', flash:'1.8', kiai:'2',
@@ -1173,13 +1262,7 @@ const DEFAULT_VALUES = {
 
 function resetToDefault() {
   if (!confirm('デフォルト設定に初期化しますか？\n現在の入力値はリセットされます。')) return;
-  // jobキャッシュをリセット
-  Object.keys(jobCache).forEach(j => { jobCache[j] = {}; });
-  // 魔剣士キャッシュにデフォルト値を設定
-  jobCache['makentou'] = { sword:'831', fc:'4', fb:'0', inga_kiwami:'1', inga:'4' };
-  jobCache['majin']    = { tsukon:'0', nitouryuu:'100' };
 
-  // 全入力フィールドにデフォルト値をセット
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
     if (!el || DEFAULT_VALUES[id] === undefined) return;
@@ -1187,12 +1270,12 @@ function resetToDefault() {
     else el.value = DEFAULT_VALUES[id];
   });
 
-  // 職業を魔剣士にセット（visibility適用）
   currentJob = 'makentou';
-  ['makentou','majin','godhan','other'].forEach(j => {
+  ['makentou','majin','godhan','all'].forEach(j => {
     document.getElementById('job_' + j).classList.toggle('active', j === 'makentou');
   });
   _applyJobVisibility('makentou');
+  _applyZoneRestrictions('makentou');
 
   calc();
   lsSave();
