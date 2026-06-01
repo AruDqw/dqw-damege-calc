@@ -117,8 +117,18 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
   padding: 8px 4px; cursor: pointer; transition: all 0.15s; text-align: center;
 }
 .job-btn:hover { border-color: #378ADD; color: #1a4a8a; background: #eef5ff; }
-.job-btn.active { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
+/* 職業ごとのactiveカラー */
+#job_makentou.active { background: #7b1a2e; border-color: #7b1a2e; color: #fff; }
+#job_majin.active    { background: #1a1a6e; border-color: #1a1a6e; color: #fff; }
+#job_godhan.active   { background: #1a5c2e; border-color: #1a5c2e; color: #fff; }
+#job_all.active      { background: #5a3a00; border-color: #5a3a00; color: #fff; }
 .job-note { font-size: 10px; color: #aaa; padding: 0 12px 8px; }
+
+/* 最終ダメージ欄の職業カラー */
+.result-sticky.job-makentou { background: #5a1020; }
+.result-sticky.job-majin    { background: #12125a; }
+.result-sticky.job-godhan   { background: #0e4020; }
+.result-sticky.job-all      { background: #3a2400; }
 </style>
 </head>
 <body>
@@ -348,6 +358,11 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     </div>
     <div class="row-result" id="r_zone_slash">—</div>
   </div>
+  <div class="row" id="row_god_rage">
+    <div class="row-label">ゴッドレイジ（%）<small>40+75(心道)+Lv×2.5　LV90で最大340</small></div>
+    <div class="row-input"><input type="number" id="god_rage" value="0" min="0"></div>
+    <div class="row-result" id="r_god_rage">—</div>
+  </div>
   <div class="row">
     <div class="row-label">会心必中</div>
     <div class="row-input">
@@ -359,7 +374,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
     <div class="row-result" id="r_hisshu">—</div>
   </div>
   <div class="row divider">
-    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+その他斬体+スキルUP+斬体UP+おうえん+ゾーン+会心必中)/100</small></div>
+    <div class="row-label star">★ 斬体合計<small>(100+斬体×T+その他斬体+スキルUP+斬体UP+おうえん+ゾーン+ゴッドレイジ+会心必中)/100</small></div>
     <div class="row-spacer"></div>
     <div class="row-result key step1" id="r_E14">—</div>
   </div>
@@ -702,7 +717,7 @@ h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 </div>
 
 <!-- 最終結果（sticky） -->
-<div class="result-sticky">
+<div class="result-sticky" id="result_sticky">
   <div class="result-grid">
     <div>
       <div class="result-label">最小ダメージ</div>
@@ -749,7 +764,10 @@ const JOB_EXCLUSIVE = {
     { rowId: 'card_nitouryuu',  fieldId: 'nitouryuu',    zero: '100' },
     { rowId: 'row_nezetsu',     fieldId: 'nezetsu',      zero: '0' },
     { rowId: 'row_nezetsu_mind',fieldId: 'nezetsu_mind', zero: '0' },
-  ]
+  ],
+  godhan: [
+    { rowId: 'row_god_rage', fieldId: 'god_rage', zero: '0' },
+  ],
 };
 
 // 職業ごとの値キャッシュは不要（DOMに値を保持するため）
@@ -848,11 +866,20 @@ function setJob(job) {
     document.getElementById('job_' + j).classList.toggle('active', j === job);
   });
 
+  // 最終ダメージ欄の色を職業に合わせて切り替え
+  _applyResultColor(job);
+
   _applyJobVisibility(job);
   _applyZoneRestrictions(job);
 
   calc();
   lsSave();
+}
+
+function _applyResultColor(job) {
+  const rs = document.getElementById('result_sticky');
+  rs.classList.remove('job-makentou','job-majin','job-godhan','job-all');
+  rs.classList.add('job-' + job);
 }
 
 // 非表示の職業専用項目はzero値として読む
@@ -911,8 +938,9 @@ function calc() {
   const slashUp = n('slash_up');
   const E13 = n('cheer');
   const zoneSlash = parseFloat($('zone_slash').value);  // ゾーン（斬体）
+  const godRage = nJob('god_rage');                      // ゴッドレイジ
   const hisshu = parseFloat($('hisshu').value);          // 会心必中
-  const E14 = Math.floor((100 + E11 + slashOther + E12 + slashUp + E13 + zoneSlash + hisshu) / 100 * 1000) / 1000;
+  const E14 = Math.floor((100 + E11 + slashOther + E12 + slashUp + E13 + zoneSlash + godRage + hisshu) / 100 * 1000) / 1000;
 
   const forceCheck = document.getElementById('force_check').checked;
   const attrRaw = forceCheck ? Math.floor(n('attr') / 2) : n('attr');  // フォースあり: ÷2切り捨て
@@ -1035,6 +1063,7 @@ function calc() {
   $('r_slash_up').textContent = slashUp;
   $('r_E13').textContent = E13;
   $('r_zone_slash').textContent = '+' + zoneSlash + '%';
+  $('r_god_rage').textContent   = '+' + godRage + '%';
   $('r_hisshu').textContent = '+' + hisshu + '%';
   $('r_E14').textContent = fd(E14);
   $('r_E15').textContent = fd(E15);
@@ -1111,6 +1140,7 @@ function lsLoad() {
       document.getElementById('job_' + j).classList.toggle('active', j === savedJob);
     });
     _applyJobVisibility(savedJob);
+    _applyResultColor(savedJob);
     _applyZoneRestrictions(savedJob);
   } catch(e) {}
 }
@@ -1120,7 +1150,7 @@ const INPUT_IDS = [
   'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
   'tension_ally','zone_tension',
-  'slash','slash_other','skill_up','slash_up','cheer','zone_slash','hisshu',
+  'slash','slash_other','skill_up','slash_up','cheer','zone_slash','god_rage','hisshu',
   'attr','force_check','fc','fb','zone_attr',
   'keitou','meishou',
   'nezetsu','nezetsu_mind',
@@ -1133,7 +1163,7 @@ const INPUT_IDS = [
 ];
 
 // バージョンが変わったらlocalStorageをクリアしてデフォルト値を使う
-const LS_VERSION = 'dqw_calc_v13';
+const LS_VERSION = 'dqw_calc_v14';
 if (!localStorage.getItem(LS_VERSION)) {
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem('dqw_calc_slots');
@@ -1149,6 +1179,7 @@ if (!localStorage.getItem(LS_KEY)) {
 lsLoad();
 // 常に現在の職業のvisibility・ゾーン制限を適用
 _applyJobVisibility(currentJob);
+_applyResultColor(currentJob);
 _applyZoneRestrictions(currentJob);
 document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => { calc(); lsSave(); }));
 document.querySelectorAll('input[type=checkbox]').forEach(el => el.addEventListener('change', () => { calc(); lsSave(); }));
@@ -1229,6 +1260,7 @@ function historyLoad(i) {
     document.getElementById('job_' + j).classList.toggle('active', j === loadedJob);
   });
   _applyJobVisibility(loadedJob);
+  _applyResultColor(loadedJob);
   _applyZoneRestrictions(loadedJob);
   calc();
   lsSave();
@@ -1248,7 +1280,7 @@ const DEFAULT_VALUES = {
   skill_pct:'900', skill_bonus_pct:'60',
   tension_ally:'50', zone_tension:'0',
   slash:'70', slash_other:'7', skill_up:'40', slash_up:'0', cheer:'80',
-  zone_slash:'0',
+  zone_slash:'0', god_rage:'0',
   attr:'79', force_check: true, fc:'4', fb:'0', zone_attr:'0',
   keitou:'10', meishou:'10',
   nezetsu:'0', nezetsu_mind:'0',
@@ -1275,6 +1307,7 @@ function resetToDefault() {
     document.getElementById('job_' + j).classList.toggle('active', j === 'makentou');
   });
   _applyJobVisibility('makentou');
+  _applyResultColor('makentou');
   _applyZoneRestrictions('makentou');
 
   calc();
