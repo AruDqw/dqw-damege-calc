@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DQW 回復量計算機</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#1a1d24;
+    --panel2:#20242c;
+    --accent:#5ec8d8;
+    --accent2:#8be0d0;
+    --text:#e8ecf1;
+    --sub:#9aa3b2;
+    --border:#2c313c;
+    --good:#7ee787;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    background:linear-gradient(135deg,#0f1115,#161a22);
+    color:var(--text);
+    min-height:100vh;
+    padding:24px;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+  }
+  h1{
+    font-size:20px;
+    text-align:center;
+    margin-bottom:4px;
+    letter-spacing:0.05em;
+  }
+  .sub-title{
+    text-align:center;
+    color:var(--sub);
+    font-size:12px;
+    margin-bottom:24px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:16px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2{
+    font-size:14px;
+    color:var(--accent2);
+    margin:0 0 14px;
+    border-left:3px solid var(--accent);
+    padding-left:8px;
+  }
+  .input-with-sum{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .input-with-sum input{
+    flex:1;
+  }
+  .sum-readout{
+    flex-shrink:0;
+    font-size:13px;
+    color:var(--good);
+    white-space:nowrap;
+    min-width:90px;
+    text-align:right;
+  }
+  .sum-readout .arrow{
+    color:var(--sub);
+    margin-right:2px;
+  }
+  .effective-readout{
+    text-align:right;
+    font-size:11px;
+    color:var(--accent2);
+    margin-top:2px;
+  }
+  .effective-readout .arrow{
+    color:var(--sub);
+    margin-right:2px;
+  }
+  .field{
+    margin-bottom:14px;
+  }
+  .field label{
+    display:block;
+    font-size:12px;
+    color:var(--sub);
+    margin-bottom:6px;
+  }
+  .field input[type=number], .field select{
+    width:100%;
+    padding:10px 12px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-size:15px;
+    outline:none;
+  }
+  .field input[type=number]:focus, .field select:focus{
+    border-color:var(--accent);
+  }
+  .row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .weapon-info{
+    font-size:11px;
+    color:var(--sub);
+    margin-top:-8px;
+    margin-bottom:14px;
+  }
+  .result-card{
+    position:sticky;
+    bottom:12px;
+    z-index:10;
+    background:var(--panel);
+    border:1px solid var(--accent);
+    border-radius:14px;
+    padding:8px 20px;
+    margin-top:16px;
+    box-shadow:0 -4px 24px rgba(0,0,0,0.5);
+  }
+  .result-main{
+    text-align:center;
+    padding:4px 0;
+  }
+  .result-main .label{
+    font-size:12px;
+    color:var(--sub);
+  }
+  .result-main .value{
+    font-size:40px;
+    font-weight:bold;
+    color:var(--good);
+    line-height:1.2;
+  }
+  .result-main .value span{
+    font-size:18px;
+    color:var(--sub);
+    font-weight:normal;
+  }
+  .breakdown{
+    margin-top:10px;
+    font-size:13px;
+    color:var(--sub);
+    border-top:1px dashed var(--border);
+    padding-top:12px;
+  }
+  .breakdown div{
+    display:flex;
+    justify-content:space-between;
+    padding:4px 0;
+  }
+  .breakdown .k{color:var(--sub);}
+  .breakdown .v{color:var(--text); font-weight:500;}
+  .note{
+    font-size:11px;
+    color:var(--sub);
+    line-height:1.6;
+    margin-top:6px;
+  }
+  .note strong{
+    color:var(--accent2);
+    font-weight:600;
+  }
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:#5c6372;
+    margin-top:20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DQW 回復量計算機</h1>
+  <div class="sub-title">基礎回復量 × スキルHP回復効果 × とくぎ/呪文HP回復効果</div>
+
+  <div class="card">
+    <h2>心（自由欄）×4</h2>
+    <div class="field">
+      <select id="kokoro1"></select>
+    </div>
+    <div class="field">
+      <select id="kokoro2"></select>
+    </div>
+    <div class="field">
+      <select id="kokoro3"></select>
+    </div>
+    <div class="field">
+      <select id="kokoro4"></select>
+    </div>
+    <div class="note" id="kokoroSumNote"></div>
+  </div>
+
+  <div class="card">
+    <h2>入力</h2>
+
+    <div class="field">
+      <label for="weapon">武器（呪文/とくぎ）</label>
+      <select id="weapon"></select>
+    </div>
+    <div class="weapon-info" id="weaponInfo"></div>
+
+    <div class="field">
+      <label for="recoveryMagic">回復魔力（ベース・心/レベルアップ前）</label>
+      <div class="input-with-sum">
+        <input type="number" id="recoveryMagic" value="786" min="0">
+        <span class="sum-readout" id="magicSumReadout"><span class="arrow">→</span>--</span>
+      </div>
+      <div class="effective-readout" id="magicEffReadout"><span class="arrow">レベル補正後 →</span>--</div>
+    </div>
+
+    <div class="field">
+      <label for="skillPct">スキル HP回復効果 ベース(%)</label>
+      <div class="input-with-sum">
+        <input type="number" id="skillPct" value="62" step="1">
+        <span class="sum-readout" id="skillSumReadout"><span class="arrow">→</span>--</span>
+      </div>
+      <div class="effective-readout" id="skillEffReadout"><span class="arrow">テンション補正後 →</span>--</div>
+    </div>
+    <div class="field">
+      <label for="tokugiPct">とくぎ/呪文 HP回復効果 ベース(%)</label>
+      <div class="input-with-sum">
+        <input type="number" id="tokugiPct" value="20" step="1">
+        <span class="sum-readout" id="tokugiSumReadout"><span class="arrow">→</span>--</span>
+      </div>
+      <div class="effective-readout" id="tokugiEffReadout"><span class="arrow">テンション補正後 →</span>--</div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label for="lvSteps">レベルアップ（段数）</label>
+        <input type="number" id="lvSteps" value="0" min="0" max="20">
+      </div>
+      <div class="field">
+        <label for="tension">テンション</label>
+        <select id="tension">
+          <option value="0" selected>0 → +0%</option>
+          <option value="10">5 → +10%</option>
+          <option value="20">20 → +20%</option>
+          <option value="30">50 → +30%</option>
+          <option value="50">100 → +50%</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card result-card">
+    <div class="result-main">
+      <div class="label">回復量</div>
+      <div class="value" id="resultValue">--<span> ポイント</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="breakdown" id="breakdown"></div>
+    <div class="note">※ 基礎回復量は武器固有の2点（回復魔力と回復量）から線形補間して算出。レベルアップ・テンションの倍率/整数切り捨て処理はダメージ計算機(<a href="https://github.com/arudqw/dqw-damege-calc" target="_blank" style="color:var(--accent2);">dqw-damege-calc</a>)と同じ仕様を流用していますが、回復量計算における実際の小数処理は未確認のため目安値としてご利用ください。</div>
+  </div>
+
+  <footer>DQW Heal Calculator (sample)</footer>
+</div>
+
+<script>
+// 武器ごとの基礎回復量データ：2点 (回復魔力, 基礎回復量) を与えれば線形補間で計算
+// maxMagic = 回復魔力上限（レベル補正後の値に対して適用されるリミット）
+// 後で武器を追加する場合は、この配列に { name, points:[[magic1,val1],[magic2,val2]], maxMagic } を追加するだけでOK
+const WEAPONS = [
+  {
+    name: "道示す光",
+    points: [
+      [1600, 233],
+      [1900, 260]
+    ],
+    maxMagic: 1900
+  }
+  // 今後ここに追加: { name:"○○の杖", points:[[m1,v1],[m2,v2]], maxMagic: ### }
+];
+
+// 心データ：[回復魔力, スキルHP回復効果%, とくぎ/呪文HP回復効果%]
+// 単独装備した場合の回復量が高い順に並べています（風の精霊が最も高い）
+// 4スロットそれぞれ異なる心を選択可能、選択した心のステータスは全て加算される
+const KOKORO = [
+  { name: "風の精霊", stats: [212, 15, 0] },
+  { name: "リュウちゃん(覚醒)", stats: [260, 10, 0] },
+  { name: "破壊の邪神シドー", stats: [223, 12, 0] },
+  { name: "セティア", stats: [205, 10, 0] },
+  { name: "魔王バラモス", stats: [156, 14, 0] },
+  { name: "メイデンドール", stats: [163, 10, 2] }
+];
+
+function populateKokoroSelects() {
+  // 初期状態: スロット1〜4にそれぞれ シドー / リュウちゃん(覚醒) / 風の精霊 / メイデンドール を装着済みとする
+  const defaultNames = {
+    kokoro1: "風の精霊",
+    kokoro2: "リュウちゃん(覚醒)",
+    kokoro3: "破壊の邪神シドー",
+    kokoro4: "メイデンドール"
+  };
+  ['kokoro1', 'kokoro2', 'kokoro3', 'kokoro4'].forEach(id => {
+    const sel = document.getElementById(id);
+    const noneOpt = document.createElement('option');
+    noneOpt.value = "-1";
+    noneOpt.textContent = "なし";
+    sel.appendChild(noneOpt);
+    KOKORO.forEach((k, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${k.name} (魔力+${k.stats[0]} / スキル+${k.stats[1]}% / とくぎ+${k.stats[2]}%)`;
+      sel.appendChild(opt);
+    });
+    const defaultIdx = KOKORO.findIndex(k => k.name === defaultNames[id]);
+    sel.value = String(defaultIdx);
+  });
+}
+
+function getKokoroSum() {
+  let sum = [0, 0, 0];
+  ['kokoro1', 'kokoro2', 'kokoro3', 'kokoro4'].forEach(id => {
+    const idx = parseInt(document.getElementById(id).value, 10);
+    if (idx >= 0) {
+      const k = KOKORO[idx];
+      sum[0] += k.stats[0];
+      sum[1] += k.stats[1];
+      sum[2] += k.stats[2];
+    }
+  });
+  return sum;
+}
+
+// 2点から「回復魔力0の時の値（切片）」と「回復魔力+1あたりの増加量（傾き）」を求める
+function getInterceptSlope(weapon) {
+  const [[m1, v1], [m2, v2]] = weapon.points;
+  const slope = (v2 - v1) / (m2 - m1);
+  const intercept = v1 - slope * m1;
+  return { intercept, slope };
+}
+
+function calcBaseHeal(weapon, magic) {
+  const { intercept, slope } = getInterceptSlope(weapon);
+  return intercept + slope * magic;
+}
+
+function populateWeaponSelect() {
+  const sel = document.getElementById('weapon');
+  WEAPONS.forEach((w, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = w.name;
+    sel.appendChild(opt);
+  });
+}
+
+function updateWeaponInfo() {
+  const sel = document.getElementById('weapon');
+  const weapon = WEAPONS[sel.value];
+  const [[m1, v1], [m2, v2]] = weapon.points;
+  const { intercept, slope } = getInterceptSlope(weapon);
+  document.getElementById('weaponInfo').textContent =
+    `基準点: 回復魔力${m1}→${v1} / 回復魔力${m2}→${v2}　|　回復魔力0時:${intercept.toFixed(2)}　回復魔力+1あたり:+${slope.toFixed(4)}　|　回復魔力上限:${weapon.maxMagic}`;
+}
+
+// テンション選択値(0,10,20,30,50)をそのまま「テンション倍率用の加算%」として使用
+// T = 1 + テンション加算% / 100　（ダメージ計算機と同じ仕様）
+function calculate() {
+  const sel = document.getElementById('weapon');
+  const weapon = WEAPONS[sel.value];
+  const baseMagic = parseFloat(document.getElementById('recoveryMagic').value) || 0;
+  const baseSkillPct = parseFloat(document.getElementById('skillPct').value) || 0;
+  const baseTokugiPct = parseFloat(document.getElementById('tokugiPct').value) || 0;
+  const lvSteps = Math.round(parseFloat(document.getElementById('lvSteps').value) || 0);
+  const tensionPct = parseFloat(document.getElementById('tension').value) || 0;
+
+  // 心（自由欄）の合計を加算
+  const kokoroSum = getKokoroSum();
+  const rawMagic = baseMagic + kokoroSum[0];
+  const skillPct = baseSkillPct + kokoroSum[1];
+  const tokugiPct = baseTokugiPct + kokoroSum[2];
+
+  document.getElementById('kokoroSumNote').innerHTML =
+    `心の加算分: 回復魔力+${kokoroSum[0]} / スキルHP回復+${kokoroSum[1]}% / とくぎ回復+${kokoroSum[2]}%`;
+
+  document.getElementById('magicSumReadout').innerHTML = `<span class="arrow">→</span>${rawMagic}`;
+  document.getElementById('skillSumReadout').innerHTML = `<span class="arrow">→</span>${skillPct}%`;
+  document.getElementById('tokugiSumReadout').innerHTML = `<span class="arrow">→</span>${tokugiPct}%`;
+  // レベルアップ：floor(1.04^段数 × 100) / 100 をレベル倍率として回復魔力に適用（ダメージ計算機と同じ仕様）
+  const lvRate = lvSteps === 0 ? 1 : Math.floor(Math.pow(1.04, lvSteps) * 100) / 100;
+  const effectiveMagicRaw = Math.floor(rawMagic * lvRate);
+  // 武器ごとの回復魔力上限（レベル補正後の値に対して適用）
+  const effectiveMagic = Math.min(effectiveMagicRaw, weapon.maxMagic);
+
+  // テンション：スキルHP回復効果・とくぎ/呪文HP回復効果それぞれに floor(値×T) で適用（ダメージ計算機と同じ仕様）
+  const T = 1 + tensionPct / 100;
+  const effectiveSkillPct = Math.floor(skillPct * T);
+  const effectiveTokugiPct = Math.floor(tokugiPct * T);
+
+  const magicCapped = effectiveMagicRaw > weapon.maxMagic;
+  document.getElementById('magicEffReadout').innerHTML =
+    `<span class="arrow">レベル補正後 →</span>${effectiveMagic}${magicCapped ? `（上限${weapon.maxMagic}でカット／補正値${effectiveMagicRaw}）` : ''}`;
+  document.getElementById('skillEffReadout').innerHTML = `<span class="arrow">テンション補正後 →</span>${effectiveSkillPct}%`;
+  document.getElementById('tokugiEffReadout').innerHTML = `<span class="arrow">テンション補正後 →</span>${effectiveTokugiPct}%`;
+
+  const base = calcBaseHeal(weapon, effectiveMagic);
+  const skillMult = 1 + effectiveSkillPct / 100;
+  const tokugiMult = 1 + effectiveTokugiPct / 100;
+  const total = base * skillMult * tokugiMult;
+  const rounded = Math.floor(total);
+
+  document.getElementById('resultValue').innerHTML = `${rounded}<span> ポイント</span>`;
+
+  const breakdown = document.getElementById('breakdown');
+  breakdown.innerHTML = `
+    <div><span class="k">回復魔力(ベース+心)</span><span class="v">${rawMagic}</span></div>
+    <div><span class="k">レベル倍率</span><span class="v">×${lvRate.toFixed(2)} (${lvSteps}段)</span></div>
+    <div><span class="k">実効回復魔力</span><span class="v">${effectiveMagic}</span></div>
+    <div><span class="k">基礎回復量</span><span class="v">${base.toFixed(2)}</span></div>
+    <div><span class="k">スキルHP回復効果</span><span class="v">×${skillMult.toFixed(2)} (+${effectiveSkillPct}% ／元+${skillPct}%×T)</span></div>
+    <div><span class="k">とくぎ/呪文HP回復効果</span><span class="v">×${tokugiMult.toFixed(2)} (+${effectiveTokugiPct}% ／元+${tokugiPct}%×T)</span></div>
+    <div><span class="k">合計(小数)</span><span class="v">${total.toFixed(2)}</span></div>
+  `;
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('input', calculate);
+});
+
+populateWeaponSelect();
+populateKokoroSelects();
+updateWeaponInfo();
+document.getElementById('weapon').addEventListener('change', () => {
+  updateWeaponInfo();
+  calculate();
+});
+calculate();
+</script>
+</body>
+</html>
