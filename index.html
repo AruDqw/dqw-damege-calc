@@ -214,8 +214,94 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     margin-bottom:16px;
     box-shadow:0 4px 16px rgba(31,157,108,0.10);
   }
+  .heal-kokoro-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .heal-kokoro-header h2{
+    margin:0;
+  }
+  .heal-auto-btn{
+    padding:6px 14px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+    transition:background .15s;
+  }
+  .heal-auto-btn:hover{
+    background:var(--accent2);
+  }
   .heal-card-kokoro{
     border-top:3px solid var(--accent2);
+  }
+  .heal-cost-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px dashed var(--border);
+  }
+  .heal-cost-lv{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .heal-cost-lv label{
+    font-size:12px;
+    color:var(--sub);
+    white-space:nowrap;
+  }
+  .heal-cost-lv select{
+    padding:4px 6px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--text);
+    font-size:13px;
+    width:60px;
+  }
+  .heal-cost-display{
+    flex:1;
+    text-align:right;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:0.02em;
+  }
+  .heal-cost-num{
+    color:var(--text);
+  }
+  .heal-cost-num.over{
+    color:#d32f2f;
+  }
+  .heal-cost-sep{
+    color:var(--sub);
+    margin:0 4px;
+    font-weight:400;
+  }
+  .heal-cost-warning{
+    text-align:right;
+    font-size:12px;
+    font-weight:700;
+    color:#d32f2f;
+    margin-top:4px;
+  }
+  .heal-type-warn{
+    font-size:11px;
+    color:#c2630a;
+    margin-top:3px;
+    padding:3px 6px;
+    background:rgba(194,99,10,0.08);
+    border-radius:4px;
+    border-left:3px solid #c2630a;
   }
   .heal-card-input{
     border-top:3px solid var(--accent);
@@ -992,7 +1078,10 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
   <div class="heal-sub-title">基礎回復量 × スキルHP回復効果 × とくぎ/呪文HP回復効果</div>
 
   <div class="heal-card heal-card-kokoro">
-    <h2>心（自由欄）×4</h2>
+    <div class="heal-kokoro-header">
+      <h2>心（自由欄）×4</h2>
+      <button id="autoSelectBtn" class="heal-auto-btn" onclick="autoSelectKokoro()">⚡ オート</button>
+    </div>
     <div class="heal-field">
       <select id="kokoro1"></select>
     </div>
@@ -1005,6 +1094,31 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     <div class="heal-field">
       <select id="kokoro4"></select>
     </div>
+
+    <div class="heal-cost-row">
+      <div class="heal-cost-lv">
+        <label for="charLevel">キャラLv</label>
+        <select id="charLevel">
+          <option value="90">90</option>
+          <option value="89">89</option>
+          <option value="88">88</option>
+          <option value="87">87</option>
+          <option value="86">86</option>
+          <option value="85">85</option>
+          <option value="84">84</option>
+          <option value="83">83</option>
+          <option value="82">82</option>
+          <option value="81">81</option>
+          <option value="80">80</option>
+        </select>
+      </div>
+      <div class="heal-cost-display" id="costDisplay">
+        <span id="costTotal" class="heal-cost-num">0</span>
+        <span class="heal-cost-sep">/</span>
+        <span id="costMax" class="heal-cost-num">700</span>
+      </div>
+    </div>
+    <div id="costWarning" class="heal-cost-warning" style="display:none">⚠️ コスト上限を超えています</div>
     <div class="heal-note" id="kokoroSumNote"></div>
   </div>
 
@@ -1714,6 +1828,7 @@ if (!slots[1]) {
 const WEAPONS = [
   {
     name: "道示す光(とくぎ)",
+    type: "tokugi",
     points: [
       [1600, 233],
       [1900, 260]
@@ -1722,6 +1837,7 @@ const WEAPONS = [
   },
   {
     name: "女神の奇跡(呪文)",
+    type: "jumon",
     points: [
       [1600, 238],
       [2100, 280]
@@ -1733,31 +1849,32 @@ const WEAPONS = [
     // (600,134)(900,160)(1350,199) の3点が 切片82・傾き13/150 の直線にぴったり一致。
     // (250,105) のみこの式だと103.67(floor103/round104)になり不一致のため、計測誤差の可能性ありとして除外。
     name: "いやしの占術(とくぎ)",
+    type: "tokugi",
     points: [
       [900, 160],
       [1350, 199]
     ],
     maxMagic: 1350
   }
-  // 今後ここに追加: { name:"○○の杖", points:[[m1,v1],[m2,v2]], maxMagic: ### }
+  // 今後ここに追加: { name:"○○の杖", type:"tokugi"/"jumon", points:[[m1,v1],[m2,v2]], maxMagic: ### }
 ];
 
-// 心データ：[回復魔力, スキルHP回復効果%, とくぎ/呪文HP回復効果%]
-// 単独装備した場合の回復量が高い順に並べています（風の精霊が最も高い）
-// 4スロットそれぞれ異なる心を選択可能、選択した心のステータスは全て加算される
+// 心データ：stats=[回復魔力, スキルHP回復効果%, とくぎ/呪文HP回復効果%]
+// type: "tokugi"=とくぎ専用, "jumon"=呪文専用, null=どちらでも有効
+// 武器typeと心typeが不一致の場合、stats[2](3つ目のステータス)が無効(0)になる
 const KOKORO = [
-  { name: "風の精霊", stats: [212, 15, 0] },
-  { name: "リュウちゃん(覚醒)", stats: [260, 10, 0] },
-  { name: "破壊の邪神シドー", stats: [223, 12, 0] },
-  { name: "セイレーンゴースト", stats: [173, 0, 10] },
-  { name: "魔王バラモス", stats: [156, 14, 0] },
-  { name: "メイデンドール", stats: [163, 10, 2] },
-  { name: "セティア", stats: [205, 10, 0] },
-  { name: "魔王ラスヴェーザ", stats: [168, 10, 0] },
-  { name: "スーパーテンツク", stats: [159, 10, 0] },
-  { name: "ナウマンボーグ", stats: [133, 12, 0] },
-  { name: "ジャミラス(とくぎ)", stats: [153, 0, 7] },
-  { name: "ごくらくちょう(呪文)", stats: [189, 0, 8] }
+  { name: "風の精霊",             stats: [212, 15, 0], cost: 200, costBonus: 4,  type: null },
+  { name: "リュウちゃん(覚醒)",   stats: [260, 10, 0], cost: 161, costBonus: 10, type: null },
+  { name: "破壊の邪神シドー",     stats: [223, 12, 0], cost: 197, costBonus: 4,  type: null },
+  { name: "セイレーンゴースト(とくぎ)", stats: [173, 0, 10], cost: 171, costBonus: 4, type: "tokugi" },
+  { name: "魔王バラモス",         stats: [156, 14, 0], cost: 174, costBonus: 4,  type: null },
+  { name: "メイデンドール",       stats: [163, 10, 2], cost: 158, costBonus: 4,  type: null },
+  { name: "セティア",             stats: [205, 10, 0], cost: 122, costBonus: 4,  type: null },
+  { name: "魔王ラスヴェーザ",     stats: [168, 10, 0], cost: 170, costBonus: 0,  type: null },
+  { name: "スーパーテンツク",     stats: [159, 10, 0], cost: 137, costBonus: 4,  type: null },
+  { name: "ナウマンボーグ",       stats: [133, 12, 0], cost: 107, costBonus: 4,  type: null },
+  { name: "ジャミラス(とくぎ)",   stats: [153,  0, 7], cost: 114, costBonus: 4,  type: "tokugi" },
+  { name: "ごくらくちょう(呪文)", stats: [189,  0, 8], cost: 125, costBonus: 4,  type: "jumon" }
 ];
 
 function populateKokoroSelects() {
@@ -1777,7 +1894,7 @@ function populateKokoroSelects() {
     KOKORO.forEach((k, i) => {
       const opt = document.createElement('option');
       opt.value = i;
-      opt.textContent = k.name;
+      opt.textContent = `${k.name}  [${k.cost}]`;
       sel.appendChild(opt);
     });
     const defaultIdx = KOKORO.findIndex(k => k.name === defaultNames[id]);
@@ -1785,18 +1902,121 @@ function populateKokoroSelects() {
   });
 }
 
-function getKokoroSum() {
+// レベルごとの基礎コスト上限
+const LEVEL_COST_BASE = {
+  90:700, 89:694, 88:689, 87:683, 86:678,
+  85:673, 84:667, 83:661, 82:655, 81:649, 80:643
+};
+
+function getKokoroCostInfo() {
+  let totalCost = 0;
+  let totalBonus = 0;
+  ['kokoro1','kokoro2','kokoro3','kokoro4'].forEach(id => {
+    const idx = parseInt(document.getElementById(id).value, 10);
+    if (idx >= 0) {
+      totalCost  += KOKORO[idx].cost;
+      totalBonus += KOKORO[idx].costBonus;
+    }
+  });
+  return { totalCost, totalBonus };
+}
+
+function getMaxCost() {
+  const lv = parseInt(document.getElementById('charLevel').value, 10);
+  const base = LEVEL_COST_BASE[lv] || 700;
+  const { totalBonus } = getKokoroCostInfo();
+  return base + totalBonus;
+}
+
+// 現在の武器・ベースステータス・レベル・テンションを使って回復量を計算するヘルパー
+function calcHealForStats(magicAdd, skillAdd, tokugiAdd) {
+  const sel = document.getElementById('weapon');
+  const weapon = WEAPONS[sel.value];
+  if (!weapon) return 0;
+  const baseMagic  = parseFloat(document.getElementById('recoveryMagic').value) || 0;
+  const baseSkill  = parseFloat(document.getElementById('skillPct').value) || 0;
+  const baseTokugi = parseFloat(document.getElementById('tokugiPct').value) || 0;
+  const lvSteps    = Math.round(parseFloat(document.getElementById('lvSteps').value) || 0);
+  const tensionPct = parseFloat(document.getElementById('tension').value) || 0;
+
+  const rawMagic  = baseMagic  + magicAdd;
+  const skillPct  = baseSkill  + skillAdd;
+  const tokugiPct = baseTokugi + tokugiAdd;
+
+  const lvRate = lvSteps === 0 ? 1 : Math.floor(Math.pow(1.04, lvSteps) * 100) / 100;
+  const effectiveMagic = Math.min(Math.floor(rawMagic * lvRate), weapon.maxMagic);
+  const T = 1 + tensionPct / 100;
+  const effectiveSkillPct  = Math.floor(skillPct  * T);
+  const effectiveTokugiPct = Math.floor(tokugiPct * T);
+  const base = calcBaseHeal(weapon, effectiveMagic);
+  return base * (1 + effectiveSkillPct / 100) * (1 + effectiveTokugiPct / 100);
+}
+
+function autoSelectKokoro() {
+  const sel = document.getElementById('weapon');
+  const weapon = WEAPONS[sel.value];
+  const weaponType = weapon ? weapon.type : null;
+  const lv = parseInt(document.getElementById('charLevel').value, 10);
+  const baseCost = LEVEL_COST_BASE[lv] || 700;
+  const n = KOKORO.length;
+  const slots = ['kokoro1','kokoro2','kokoro3','kokoro4'];
+
+  let bestHeal = -1;
+  let bestCombo = null;
+
+  // C(n,4)の全組み合わせを探索
+  for (let a = 0; a < n-3; a++)
+  for (let b = a+1; b < n-2; b++)
+  for (let c = b+1; c < n-1; c++)
+  for (let d = c+1; d < n;   d++) {
+    const combo = [a, b, c, d];
+    const totalCost  = combo.reduce((s, i) => s + KOKORO[i].cost, 0);
+    const totalBonus = combo.reduce((s, i) => s + KOKORO[i].costBonus, 0);
+    const maxCost = baseCost + totalBonus;
+    if (totalCost > maxCost) continue;
+
+    const magicAdd  = combo.reduce((s, i) => s + KOKORO[i].stats[0], 0);
+    const skillAdd  = combo.reduce((s, i) => s + KOKORO[i].stats[1], 0);
+    // 武器typeと不一致の心はstats[2]を0扱い
+    const tokugiAdd = combo.reduce((s, i) => {
+      const k = KOKORO[i];
+      return s + (k.type !== null && k.type !== weaponType ? 0 : k.stats[2]);
+    }, 0);
+    const heal = calcHealForStats(magicAdd, skillAdd, tokugiAdd);
+    if (heal > bestHeal) {
+      bestHeal = heal;
+      bestCombo = combo;
+    }
+  }
+
+  if (!bestCombo) {
+    alert('コスト内で装着できる組み合わせが見つかりませんでした。');
+    return;
+  }
+
+  slots.forEach((id, i) => {
+    document.getElementById(id).value = String(bestCombo[i]);
+  });
+  calculate();
+}
+
+// weaponType: 武器のtype("tokugi"/"jumon")。心typeが武器typeと不一致の場合stats[2]を0扱い
+// invalidSlots: 不一致だったスロットIDのSet（UIの警告表示用）
+function getKokoroSum(weaponType) {
   let sum = [0, 0, 0];
+  const invalidSlots = new Set();
   ['kokoro1', 'kokoro2', 'kokoro3', 'kokoro4'].forEach(id => {
     const idx = parseInt(document.getElementById(id).value, 10);
     if (idx >= 0) {
       const k = KOKORO[idx];
+      const stat2Invalid = k.type !== null && k.type !== weaponType;
+      if (stat2Invalid) invalidSlots.add(id);
       sum[0] += k.stats[0];
       sum[1] += k.stats[1];
-      sum[2] += k.stats[2];
+      sum[2] += stat2Invalid ? 0 : k.stats[2];
     }
   });
-  return sum;
+  return { sum, invalidSlots };
 }
 
 // 2点から「回復魔力0の時の値（切片）」と「回復魔力+1あたりの増加量（傾き）」を求める
@@ -1842,14 +2062,45 @@ function calculate() {
   const lvSteps = Math.round(parseFloat(document.getElementById('lvSteps').value) || 0);
   const tensionPct = parseFloat(document.getElementById('tension').value) || 0;
 
-  // 心（自由欄）の合計を加算
-  const kokoroSum = getKokoroSum();
+  // 心（自由欄）の合計を加算（武器typeと不一致の心はstats[2]を0扱い）
+  const { sum: kokoroSum, invalidSlots } = getKokoroSum(weapon.type);
   const rawMagic = baseMagic + kokoroSum[0];
   const skillPct = baseSkillPct + kokoroSum[1];
   const tokugiPct = baseTokugiPct + kokoroSum[2];
 
+  // 無効スロットの警告表示
+  ['kokoro1','kokoro2','kokoro3','kokoro4'].forEach(id => {
+    const sel = document.getElementById(id);
+    const warnId = id + 'Warn';
+    let warn = document.getElementById(warnId);
+    if (!warn) {
+      warn = document.createElement('div');
+      warn.id = warnId;
+      warn.className = 'heal-type-warn';
+      sel.parentNode.appendChild(warn);
+    }
+    if (invalidSlots.has(id)) {
+      const idx = parseInt(sel.value, 10);
+      const kType = KOKORO[idx].type === 'tokugi' ? 'とくぎ' : '呪文';
+      const wType = weapon.type === 'tokugi' ? 'とくぎ' : '呪文';
+      warn.textContent = `⚠️ ${kType}専用の心です。${wType}武器には呪文とくぎ%が無効`;
+      warn.style.display = '';
+    } else {
+      warn.style.display = 'none';
+    }
+  });
+
   document.getElementById('kokoroSumNote').innerHTML =
     `心の加算分: 回復魔力+${kokoroSum[0]} / スキルHP回復+${kokoroSum[1]}% / とくぎ回復+${kokoroSum[2]}%`;
+
+  // コスト計算・表示
+  const { totalCost } = getKokoroCostInfo();
+  const maxCost = getMaxCost();
+  const isOver = totalCost > maxCost;
+  document.getElementById('costTotal').textContent = totalCost;
+  document.getElementById('costTotal').className = 'heal-cost-num' + (isOver ? ' over' : '');
+  document.getElementById('costMax').textContent = maxCost;
+  document.getElementById('costWarning').style.display = isOver ? '' : 'none';
 
   // 「装着後」入力欄に合計値を反映（ユーザーがそちらを直接編集していた場合も、編集後にbaseへ反映済みなので一致する）
   document.getElementById('magicAfterInput').value = rawMagic;
