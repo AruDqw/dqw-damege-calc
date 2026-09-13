@@ -607,7 +607,7 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
 
 <!-- テンション/ゾーン -->
 <div class="card">
-  <div class="card-header">テンション/ゾーン</div>
+  <div class="card-header">テンション</div>
   <div class="row">
     <div class="row-label">味方テンション</div>
     <div class="row-input">
@@ -621,15 +621,88 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     </div>
     <div class="row-result" id="r_E10">—</div>
   </div>
+  <!-- zone_tension は computeZoneFromParty() で自動設定されるため非表示 -->
+  <select id="zone_tension" style="display:none"><option value="0">0</option><option value="50">50</option></select>
+</div>
+
+<!-- ゾーン編成 -->
+<div class="card">
+  <div class="card-header">ゾーン編成</div>
   <div class="row">
-    <div class="row-label">ゾーン<small>ありの場合はテンション100扱い（T=×1.5固定）</small></div>
+    <div class="row-label">自分<small>ゾーンに入った場合：テンション100扱い＋職業特性</small></div>
     <div class="row-input">
-      <select id="zone_tension">
-        <option value="0" selected>なし　+0%</option>
-        <option value="50">あり　+50%</option>
+      <select id="zone_party_self">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（斬体+150）</option>
+        <option value="dragon">ドラゴン（斬体+150）</option>
+        <option value="tokiwatari">時渡りの剣士（斬体+150）</option>
+        <option value="makentou_z">魔剣士（属性+150）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+150）</option>
+        <option value="majin_z">魔人（会心+230）</option>
+        <option value="daimadoushi">大魔導士（会心+230）</option>
+        <option value="other">その他（T×1.5のみ）</option>
       </select>
     </div>
-    <div class="row-result" id="r_zone_tension">—</div>
+    <div class="row-result" id="r_zone_party_self">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">仲間1<small>ゾーンに入った場合：職業特性のみ</small></div>
+    <div class="row-input">
+      <select id="zone_party_1">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（斬体+45）</option>
+        <option value="dragon">ドラゴン（斬体+45）</option>
+        <option value="tokiwatari">時渡りの剣士（斬体+45）</option>
+        <option value="superstar">スーパースター（斬体+45）</option>
+        <option value="makentou_z">魔剣士（属性+45）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+45）</option>
+        <option value="majin_z">魔人（会心+69）</option>
+        <option value="daimadoushi">大魔導士（会心+69）</option>
+        <option value="other">その他（効果なし）</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_party_1">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">仲間2</div>
+    <div class="row-input">
+      <select id="zone_party_2">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（斬体+45）</option>
+        <option value="dragon">ドラゴン（斬体+45）</option>
+        <option value="tokiwatari">時渡りの剣士（斬体+45）</option>
+        <option value="superstar">スーパースター（斬体+45）</option>
+        <option value="makentou_z">魔剣士（属性+45）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+45）</option>
+        <option value="majin_z">魔人（会心+69）</option>
+        <option value="daimadoushi">大魔導士（会心+69）</option>
+        <option value="other">その他（効果なし）</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_party_2">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">仲間3</div>
+    <div class="row-input">
+      <select id="zone_party_3">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（斬体+45）</option>
+        <option value="dragon">ドラゴン（斬体+45）</option>
+        <option value="tokiwatari">時渡りの剣士（斬体+45）</option>
+        <option value="superstar">スーパースター（斬体+45）</option>
+        <option value="makentou_z">魔剣士（属性+45）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+45）</option>
+        <option value="majin_z">魔人（会心+69）</option>
+        <option value="daimadoushi">大魔導士（会心+69）</option>
+        <option value="other">その他（効果なし）</option>
+      </select>
+    </div>
+    <div class="row-result" id="r_zone_party_3">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ ゾーン合計<small>同じ職業の重複は除外。自分がいると斬体/属性/会心に×1.5のテンション補正も追加</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key" id="r_zone_total">—</div>
   </div>
 </div>
 
@@ -680,16 +753,11 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     </div>
     <div class="row-result" id="r_E13">—</div>
   </div>
+  <!-- zone_slash は computeZoneFromParty() で自動計算 -->
+  <select id="zone_slash" style="display:none"><option value="0">0</option></select>
   <div class="row">
-    <div class="row-label">ゾーン（ゴドハン、ドラゴン、時渡り）</div>
-    <div class="row-input">
-      <select id="zone_slash">
-        <option value="0" selected>なし　+0%</option>
-        <option value="45">れんけい　+45%</option>
-        <option value="150">職業　+150%</option>
-        <option value="195">れんけい＋職業　+195%</option>
-      </select>
-    </div>
+    <div class="row-label">ゾーン（ゴドハン・ドラゴン・時渡り）</div>
+    <div class="row-spacer"></div>
     <div class="row-result" id="r_zone_slash">—</div>
   </div>
   <div class="row" id="row_god_rage">
@@ -740,16 +808,11 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     </div>
     <div class="row-result" id="r_E17">—</div>
   </div>
+  <!-- zone_attr は computeZoneFromParty() で自動計算 -->
+  <select id="zone_attr" style="display:none"><option value="0">0</option></select>
   <div class="row">
-    <div class="row-label">ゾーン（魔剣士、天地雷鳴士）<small id="zone_attr_force_note" style="display:none;color:#c05000;">フォース適用: ゾーン値÷2切り捨て</small></div>
-    <div class="row-input">
-      <select id="zone_attr">
-        <option value="0" selected>なし　+0%</option>
-        <option value="45">れんけい　+45%</option>
-        <option value="150">職業　+150%</option>
-        <option value="195">れんけい＋職業　+195%</option>
-      </select>
-    </div>
+    <div class="row-label">ゾーン（魔剣士・天地雷鳴士）<small id="zone_attr_force_note" style="display:none;color:#c05000;">フォース適用: ゾーン値÷2切り捨て</small></div>
+    <div class="row-spacer"></div>
     <div class="row-result" id="r_zone_attr">—</div>
   </div>
   <div class="row divider">
@@ -992,16 +1055,11 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     </div>
     <div class="row-result" id="r_crit_in">—</div>
   </div>
+  <!-- zone_crit は computeZoneFromParty() で自動計算 -->
+  <select id="zone_crit" style="display:none"><option value="0">0</option></select>
   <div class="row">
-    <div class="row-label">ゾーン（大魔導士、魔人）</div>
-    <div class="row-input">
-      <select id="zone_crit">
-        <option value="0" selected>なし　+0%</option>
-        <option value="69">れんけい　+69%</option>
-        <option value="230">職業　+230%</option>
-        <option value="299">れんけい＋職業　+299%</option>
-      </select>
-    </div>
+    <div class="row-label">ゾーン（魔人・大魔導士）</div>
+    <div class="row-spacer"></div>
     <div class="row-result" id="r_zone_crit">—</div>
   </div>
   <div class="row divider">
@@ -1233,6 +1291,54 @@ switchTab(__savedTab);
 const $ = id => document.getElementById(id);
 const n = id => parseFloat($(id).value) || 0;
 
+// ===== ゾーン編成 =====
+// type: 'slash' / 'attr' / 'crit' / null
+// selfBonus: 自分がこの職業でゾーンに入った時の特性ボーナス
+// allyBonus: 仲間がこの職業でゾーンに入った時の特性ボーナス
+// 同じ職業は何人いても1回のみカウント（先に処理した方優先）
+const ZONE_JOB_DEFS = {
+  none:         { type: null,    selfBonus: 0,   allyBonus: 0 },
+  godhan:       { type: 'slash', selfBonus: 150, allyBonus: 45 },
+  dragon:       { type: 'slash', selfBonus: 150, allyBonus: 45 },
+  tokiwatari:   { type: 'slash', selfBonus: 150, allyBonus: 45 },
+  superstar:    { type: 'slash', selfBonus: 0,   allyBonus: 45 }, // 仲間専用
+  makentou_z:   { type: 'attr',  selfBonus: 150, allyBonus: 45 },
+  tenchiraisei: { type: 'attr',  selfBonus: 150, allyBonus: 45 },
+  majin_z:      { type: 'crit',  selfBonus: 230, allyBonus: 69 },
+  daimadoushi:  { type: 'crit',  selfBonus: 230, allyBonus: 69 },
+  other:        { type: null,    selfBonus: 0,   allyBonus: 0 },
+};
+
+function computeZoneFromParty() {
+  const selfJob   = $('zone_party_self').value;
+  const allyJobs  = ['zone_party_1','zone_party_2','zone_party_3'].map(id => $(id).value);
+  const selfInZone = selfJob !== 'none';
+
+  let slash = 0, attr = 0, crit = 0;
+  const usedJobs = new Set();
+
+  // 自分を先に処理（同じ職業があれば自分側のボーナスを優先）
+  if (selfJob !== 'none') {
+    usedJobs.add(selfJob);
+    const def = ZONE_JOB_DEFS[selfJob] || ZONE_JOB_DEFS.other;
+    if (def.type === 'slash') slash += def.selfBonus;
+    if (def.type === 'attr')  attr  += def.selfBonus;
+    if (def.type === 'crit')  crit  += def.selfBonus;
+  }
+
+  // 仲間を処理（同じ職業は重複カウントしない）
+  for (const job of allyJobs) {
+    if (job === 'none' || usedJobs.has(job)) continue;
+    usedJobs.add(job);
+    const def = ZONE_JOB_DEFS[job] || ZONE_JOB_DEFS.other;
+    if (def.type === 'slash') slash += def.allyBonus;
+    if (def.type === 'attr')  attr  += def.allyBonus;
+    if (def.type === 'crit')  crit  += def.allyBonus;
+  }
+
+  return { selfInZone, slash, attr, crit };
+}
+
 // ===== 職業選択 =====
 let currentJob = 'makentou';
 
@@ -1360,7 +1466,7 @@ function setJob(job) {
   _applyResultColor(job);
 
   _applyJobVisibility(job);
-  _applyZoneRestrictions(job);
+  // _applyZoneRestrictions は廃止（ゾーン編成カードで管理）
 
   calc();
   lsSave();
@@ -1417,9 +1523,10 @@ function calc() {
   const E8 = (skill_pct / 100) * (1 + skill_bonus_pct / 100);
   const ally_pct = parseFloat($('tension_ally').value);
   const enemy_pct = parseFloat($('tension_enemy').value);
-  const zone_tension = parseFloat($('zone_tension').value);
+  // ゾーン編成から自動計算
+  const zoneParty = computeZoneFromParty();
   // ゾーンありの場合はテンション100固定（+50%）、なしの場合は味方テンション選択値を使用
-  const effective_ally_pct = zone_tension > 0 ? 50 : ally_pct;
+  const effective_ally_pct = zoneParty.selfInZone ? 50 : ally_pct;
   const E10 = 1 + effective_ally_pct / 100;
 
   const E11 = Math.floor(n('slash') * E10);       // 斬体倍率%：整数切り捨て
@@ -1427,7 +1534,7 @@ function calc() {
   const E12 = n('skill_up');
   const slashUp = n('slash_up');
   const E13 = n('cheer');
-  const zoneSlash = parseFloat($('zone_slash').value);  // ゾーン（斬体）
+  const zoneSlash = zoneParty.slash;       // ゾーン（斬体）：自動計算
   const godRage = nJob('god_rage');                      // ゴッドレイジ
   const hisshu = parseFloat($('hisshu').value);          // 会心必中
   const E14 = Math.floor((100 + E11 + slashOther + E12 + slashUp + E13 + zoneSlash + godRage + hisshu) / 100 * 1000) / 1000;
@@ -1439,7 +1546,7 @@ function calc() {
   const E16 = nJob('fc') * 30;
   const E17 = nJob('fb');
   // 属性ゾーン：フォースありの場合はゾーン値÷2切り捨て
-  const zoneAttrRaw = parseFloat($('zone_attr').value);
+  const zoneAttrRaw = zoneParty.attr;
   const zoneAttrVal = forceCheck ? Math.floor(zoneAttrRaw / 2) : zoneAttrRaw;
   document.getElementById('zone_attr_force_note').style.display = (forceCheck && zoneAttrRaw > 0) ? 'block' : 'none';
   const E18 = Math.floor((100 + E15 + E16 + E17 + zoneAttrVal) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
@@ -1485,7 +1592,7 @@ function calc() {
     critMid = 250; critMin = 230; critMax = 270;
   }
 
-  const zoneCrit = parseFloat($('zone_crit').value);  // ゾーン（会心）
+  const zoneCrit = zoneParty.crit;  // ゾーン（会心）：自動計算
   const tsukon = isNormal ? 0 : nJob('tsukon'); // 痛恨の一撃（通常100%時は0）
 
   // 通常攻撃時は会心ダメアップ無効・閃き無効（強制1.0）
@@ -1545,7 +1652,7 @@ function calc() {
   $('r_skill_pct').textContent = fd(skill_mult);
   $('r_skill_bonus_pct').textContent = fd(skill_bonus_mult);
   $('r_E10').textContent = '×' + E10.toFixed(2);
-  $('r_zone_tension').textContent = zone_tension > 0 ? '→ T=×1.50' : '—';
+  // zone_tension表示は廃止（ゾーン編成カードで表示）
   $('r_tension_enemy').textContent = (enemy_pct >= 0 ? '+' : '') + enemy_pct + '%';
   $('r_E11').textContent = fd(E11);
   $('r_slash_other').textContent = '+' + fi(slashOther);
@@ -1578,7 +1685,28 @@ function calc() {
   $('r_E24').textContent = fd(E24eff);
   $('r_E25').textContent = fd(E25);
   $('r_E26').textContent = fd(E26);
-  $('r_zone_crit').textContent = '+' + zoneCrit + '%';
+  // ゾーン編成の結果表示
+  const zoneLabels = {slash:'斬体', attr:'属性', crit:'会心'};
+  ['zone_party_self','zone_party_1','zone_party_2','zone_party_3'].forEach(id => {
+    const resultId = 'r_' + id;
+    const val = $(id).value;
+    const el = $(resultId);
+    if (!el) return;
+    if (val === 'none') { el.textContent = '—'; return; }
+    const def = ZONE_JOB_DEFS[val] || ZONE_JOB_DEFS.other;
+    const isSelf = id === 'zone_party_self';
+    const bonus = isSelf ? def.selfBonus : def.allyBonus;
+    el.textContent = def.type ? `${zoneLabels[def.type]}+${bonus}%` : (isSelf ? 'T×1.5のみ' : '効果なし');
+  });
+  const zoneTotal = [];
+  if (zoneParty.selfInZone) zoneTotal.push('T×1.5');
+  if (zoneParty.slash) zoneTotal.push(`斬体+${zoneParty.slash}%`);
+  if (zoneParty.attr)  zoneTotal.push(`属性+${zoneParty.attr}%`);
+  if (zoneParty.crit)  zoneTotal.push(`会心+${zoneParty.crit}%`);
+  $('r_zone_total').textContent = zoneTotal.length ? zoneTotal.join(' / ') : 'ゾーンなし';
+  $('r_zone_slash').textContent = zoneParty.slash ? '+' + zoneParty.slash + '%' : '—';
+  $('r_zone_attr').textContent  = zoneParty.attr  ? '+' + (forceCheck ? Math.floor(zoneParty.attr/2) : zoneParty.attr) + '%' + (forceCheck && zoneParty.attr ? ' (÷2)' : '') : '—';
+  $('r_zone_crit').textContent  = zoneParty.crit  ? '+' + zoneParty.crit + '%' : '—';
   $('r_tsukon').textContent = isNormal ? '(種別100%: 無効)' : '+' + tsukon + '%';
   $('r_slash_res_change').textContent = (slashResChange >= 0 ? '+' : '') + slashResChange + '%';
   $('r_suijaku').textContent       = '+' + suijaku + '%';
@@ -1631,7 +1759,7 @@ function lsLoad() {
     });
     _applyJobVisibility(savedJob);
     _applyResultColor(savedJob);
-    _applyZoneRestrictions(savedJob);
+    // _applyZoneRestrictions は廃止（ゾーン編成カードで管理）
   } catch(e) {}
 }
 
@@ -1639,21 +1767,22 @@ function lsLoad() {
 const INPUT_IDS = [
   'atk','voc','lv','enemy_lvdown','sword','def','def_change','direct_hit',
   'skill_pct','skill_bonus_pct',
-  'tension_ally','zone_tension',
-  'slash','slash_other','skill_up','slash_up','cheer','zone_slash','god_rage','hisshu',
-  'attr','force_check','fc','fb','zone_attr',
+  'tension_ally',
+  'zone_party_self','zone_party_1','zone_party_2','zone_party_3',
+  'slash','slash_other','skill_up','slash_up','cheer','god_rage','hisshu',
+  'attr','force_check','fc','fb',
   'keitou','meishou',
   'nezetsu','nezetsu_mind',
   'tension_enemy',
   'resist_slash','resist_attr',
   'inga','inga_kiwami','fbreak','attr_res_change','flash','kiai',
   'slash_res_change','suijaku','freeze','senisosshitsu',
-  'crit_up','crit_type','zone_crit','tsukon',
+  'crit_up','crit_type','tsukon',
   'nitouryuu'
 ];
 
 // バージョンが変わったらlocalStorageをクリアしてデフォルト値を使う
-const LS_VERSION = 'dqw_calc_v14';
+const LS_VERSION = 'dqw_calc_v15';
 if (!localStorage.getItem(LS_VERSION)) {
   localStorage.removeItem(LS_KEY);
   localStorage.removeItem('dqw_calc_slots');
