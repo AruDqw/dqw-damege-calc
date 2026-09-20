@@ -1996,7 +1996,7 @@ const KOKORO = [
   { name: "リュウちゃん(覚醒)",   stats: [260, 10, 0], cost: 161, costBonus: 10, type: null },
   { name: "破壊の邪神シドー",     stats: [223, 12, 0], cost: 197, costBonus: 4,  type: null },
   { name: "セイレーンゴースト(とくぎ)", stats: [173, 0, 10], cost: 171, costBonus: 4, type: "tokugi" },
-  { name: "魔王バラモス",         stats: [156, 14, 0], cost: 174, costBonus: 4,  type: null },
+  { name: "魔王バラモス",         stats: [156, 12, 0], cost: 174, costBonus: 4,  type: null },
   { name: "メイデンドール",       stats: [163, 10, 2], cost: 158, costBonus: 4,  type: null },
   { name: "セティア",             stats: [205, 10, 0], cost: 122, costBonus: 4,  type: null },
   { name: "魔王ラスヴェーザ",     stats: [168, 10, 0], cost: 170, costBonus: 0,  type: null },
@@ -2033,6 +2033,7 @@ function populateKokoroSelects() {
 
 // レベルごとの基礎コスト上限
 const LEVEL_COST_BASE = {
+  95:730, 94:724, 93:718, 92:712, 91:706,
   90:700, 89:694, 88:689, 87:683, 86:678,
   85:673, 84:667, 83:661, 82:655, 81:649, 80:643
 };
