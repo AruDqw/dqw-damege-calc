@@ -348,6 +348,47 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     color:var(--sub);
     margin-right:2px;
   }
+  .heal-awaken-box{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:12px;
+  }
+  .heal-awaken-title{
+    font-size:11px;
+    color:var(--sub);
+    margin-bottom:6px;
+  }
+  .heal-awaken-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px 12px;
+  }
+  .heal-awaken-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:6px;
+  }
+  .heal-awaken-item label{
+    font-size:11px;
+    color:var(--text);
+  }
+  .heal-awaken-item input[type=number]{
+    width:56px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:4px 6px;
+    font-size:12px;
+    text-align:right;
+    background:var(--panel);
+    color:var(--text);
+  }
+  .heal-awaken-item input[type=number]:focus{
+    outline:none;
+    border-color:var(--accent);
+  }
   /* ステータスごとの色分け */
   .heal-field-magic label{ color:var(--magic-color); }
   .heal-field-magic input[type=number]{ border-color:rgba(14,124,134,0.4); }
@@ -900,7 +941,7 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     <div class="row-result key step1" id="r_resist_slash">—</div>
   </div>
   <div class="row">
-    <div class="row-label star">★ 属性耐性（%）<small>(100 − 入力%×敵T補正) / 100</small></div>
+    <div class="row-label star">★ 属性耐性（%）<small>(100 − 入力%×敵T補正) / 100</small><small>ロトの伝説、変異イオフォースなどの耐性ダウンはここを−50</small></div>
     <div class="row-input"><input type="number" id="resist_attr" value="-25"></div>
     <div class="row-result key step1" id="r_resist_attr">—</div>
   </div>
@@ -957,6 +998,7 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
         <option value="1">なし ×1.0</option>
         <option value="2" selected>きあいため ×2.0</option>
         <option value="2.25">超きあいため ×2.25</option>
+        <option value="2.3">勇者の気合ため ×2.3</option>
       </select>
     </div>
     <div class="row-result key step2" id="r_E25">—</div>
@@ -1032,12 +1074,15 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     <div class="row-result" id="r_E26">—</div>
   </div>
   <div class="row" id="row_tsukon">
-    <div class="row-label">痛恨の一撃（%）<small>会心合計に加算。種別100%時は無効</small></div>
+    <div class="row-label">痛恨の一撃（%）<small>会心合計に加算。種別100%時は無効</small><small>痛恨50%+こころ道+15%/25%を最大2個</small></div>
     <div class="row-input">
       <select id="tsukon">
         <option value="0" selected>なし　+0%</option>
         <option value="50">+50%</option>
+        <option value="65">+65%</option>
         <option value="75">+75%</option>
+        <option value="80">+80%</option>
+        <option value="90">+90%</option>
         <option value="100">+100%</option>
       </select>
     </div>
@@ -1140,6 +1185,29 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
       <h2>心（自由欄）×4</h2>
       <button id="autoSelectBtn" class="heal-auto-btn" onclick="autoSelectKokoro()">⚡ オート</button>
     </div>
+
+    <div class="heal-awaken-box">
+      <div class="heal-awaken-title">覚醒＋（対象の心を装着した時にだけ回復魔力へ加算・オートにも反映）</div>
+      <div class="heal-awaken-grid">
+        <div class="heal-awaken-item">
+          <label for="awaken_ryu">リュウちゃん(覚醒)</label>
+          <input type="number" id="awaken_ryu" min="0" max="25" value="0">
+        </div>
+        <div class="heal-awaken-item">
+          <label for="awaken_shidou">破壊の邪神シドー</label>
+          <input type="number" id="awaken_shidou" min="0" max="25" value="0">
+        </div>
+        <div class="heal-awaken-item">
+          <label for="awaken_baramosu">魔王バラモス</label>
+          <input type="number" id="awaken_baramosu" min="0" max="25" value="0">
+        </div>
+        <div class="heal-awaken-item">
+          <label for="awaken_nauman">ナウマンボーグ</label>
+          <input type="number" id="awaken_nauman" min="0" max="25" value="0">
+        </div>
+      </div>
+    </div>
+
     <div class="heal-field">
       <select id="kokoro1"></select>
     </div>
@@ -1255,6 +1323,13 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
           <option value="30">50 → +30%</option>
           <option value="50">100 → +50%</option>
         </select>
+      </div>
+    </div>
+
+    <div class="heal-row2">
+      <div class="heal-field">
+        <label for="specialKokoroPct">特殊心珠装着（%）</label>
+        <input type="number" id="specialKokoroPct" value="0" step="1">
       </div>
     </div>
   </div>
@@ -2011,6 +2086,49 @@ const KOKORO = [
   { name: "ごくらくちょう(呪文)", stats: [189,  0, 8], cost: 125, costBonus: 4,  type: "jumon" }
 ];
 
+// 「覚醒＋」対象の心：名前 → 対応する入力欄ID
+// 入力値(0〜25)は、その心をどのスロットに装着していても回復魔力へそのまま加算される
+// （スロットごとの個別値ではなく、心そのものに紐づく共通値。オート選択の探索にも反映）
+const AWAKEN_KOKORO_INPUT = {
+  "リュウちゃん(覚醒)":     "awaken_ryu",
+  "破壊の邪神シドー":       "awaken_shidou",
+  "魔王バラモス":           "awaken_baramosu",
+  "ナウマンボーグ":         "awaken_nauman"
+};
+
+function getKokoroAwakenValue(name) {
+  const inputId = AWAKEN_KOKORO_INPUT[name];
+  if (!inputId) return 0;
+  const el = document.getElementById(inputId);
+  if (!el) return 0;
+  const v = parseInt(el.value, 10) || 0;
+  return Math.max(0, Math.min(25, v));
+}
+
+// 心1件（KOKOROの要素）の、覚醒＋込みの実効回復魔力を返す
+function getEffectiveKokoroMagic(k) {
+  return k.stats[0] + getKokoroAwakenValue(k.name);
+}
+
+// 4つの心セレクトすべてについて、「覚醒＋」対象の選択肢の表示名を最新の入力値に合わせて更新する
+// （スロットに関係なく、同じ心なら常に同じ表示になる）
+function refreshKokoroOptionLabels() {
+  ['kokoro1', 'kokoro2', 'kokoro3', 'kokoro4'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    Array.from(sel.options).forEach(opt => {
+      const optIdx = parseInt(opt.value, 10);
+      if (optIdx < 0) return;
+      const k = KOKORO[optIdx];
+      if (!AWAKEN_KOKORO_INPUT[k.name]) return;
+      const awakenVal = getKokoroAwakenValue(k.name);
+      opt.textContent = awakenVal > 0
+        ? `${k.name}+${awakenVal}  [${k.cost}]`
+        : `${k.name}  [${k.cost}]`;
+    });
+  });
+}
+
 function populateKokoroSelects() {
   // 初期状態: スロット1〜4にそれぞれ シドー / リュウちゃん(覚醒) / 風の精霊 / メイデンドール を装着済みとする
   const defaultNames = {
@@ -2033,6 +2151,18 @@ function populateKokoroSelects() {
     });
     const defaultIdx = KOKORO.findIndex(k => k.name === defaultNames[id]);
     sel.value = String(defaultIdx);
+  });
+
+  refreshKokoroOptionLabels();
+
+  // 覚醒＋入力欄：変更のたびに全選択肢の表示名を更新し、再計算
+  Object.values(AWAKEN_KOKORO_INPUT).forEach(inputId => {
+    const el = document.getElementById(inputId);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      refreshKokoroOptionLabels();
+      calculate();
+    });
   });
 }
 
@@ -2110,7 +2240,7 @@ function autoSelectKokoro() {
     const maxCost = baseCost + totalBonus;
     if (totalCost > maxCost) continue;
 
-    const magicAdd  = combo.reduce((s, i) => s + KOKORO[i].stats[0], 0);
+    const magicAdd  = combo.reduce((s, i) => s + getEffectiveKokoroMagic(KOKORO[i]), 0);
     const skillAdd  = combo.reduce((s, i) => s + KOKORO[i].stats[1], 0);
     // 武器typeと不一致の心はstats[2]を0扱い
     const tokugiAdd = combo.reduce((s, i) => {
@@ -2146,7 +2276,7 @@ function getKokoroSum(weaponType) {
       const k = KOKORO[idx];
       const stat2Invalid = k.type !== null && k.type !== weaponType;
       if (stat2Invalid) invalidSlots.add(id);
-      sum[0] += k.stats[0];
+      sum[0] += getEffectiveKokoroMagic(k);
       sum[1] += k.stats[1];
       sum[2] += stat2Invalid ? 0 : k.stats[2];
     }
@@ -2196,6 +2326,9 @@ function calculate() {
   const baseTokugiPct = parseFloat(document.getElementById('tokugiPct').value) || 0;
   const lvSteps = Math.round(parseFloat(document.getElementById('lvSteps').value) || 0);
   const tensionPct = parseFloat(document.getElementById('tension').value) || 0;
+
+  // 「覚醒＋」選択肢の表示名を最新状態に同期
+  refreshKokoroOptionLabels();
 
   // 心（自由欄）の合計を加算（武器typeと不一致の心はstats[2]を0扱い）
   const { sum: kokoroSum, invalidSlots } = getKokoroSum(weapon.type);
@@ -2262,7 +2395,9 @@ function calculate() {
   const base = calcBaseHeal(weapon, effectiveMagic);
   const skillMult = 1 + effectiveSkillPct / 100;
   const tokugiMult = 1 + effectiveTokugiPct / 100;
-  const total = base * skillMult * tokugiMult;
+  const specialPct = parseFloat(document.getElementById('specialKokoroPct').value) || 0;
+  const specialMult = 1 + specialPct / 100;
+  const total = base * skillMult * tokugiMult * specialMult;
   const rounded = Math.floor(total);
 
   document.getElementById('resultValue').innerHTML = `${rounded}<span> ポイント</span>`;
@@ -2275,6 +2410,7 @@ function calculate() {
     <div><span class="heal-k">基礎回復量</span><span class="heal-v">${base.toFixed(2)}</span></div>
     <div><span class="heal-k">スキルHP回復効果</span><span class="heal-v">×${skillMult.toFixed(2)} (+${effectiveSkillPct}% ／元+${skillPct}%×T)</span></div>
     <div><span class="heal-k">とくぎ/呪文HP回復効果</span><span class="heal-v">×${tokugiMult.toFixed(2)} (+${effectiveTokugiPct}% ／元+${tokugiPct}%×T)</span></div>
+    <div><span class="heal-k">特殊心珠装着</span><span class="heal-v">×${specialMult.toFixed(2)} (+${specialPct}%)</span></div>
     <div><span class="heal-k">合計(小数)</span><span class="heal-v">${total.toFixed(2)}</span></div>
   `;
 }
