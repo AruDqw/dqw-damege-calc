@@ -941,9 +941,14 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
     <div class="row-result key step1" id="r_resist_slash">—</div>
   </div>
   <div class="row">
-    <div class="row-label star">★ 属性耐性（%）<small>(100 − 入力%×敵T補正) / 100</small><small>ロトの伝説、変異イオフォースなどの耐性ダウンはここを−50</small></div>
+    <div class="row-label star">★ 属性耐性（%）<small>(100 − 入力%×敵T補正) / 100</small></div>
     <div class="row-input"><input type="number" id="resist_attr" value="-25"></div>
     <div class="row-result key step1" id="r_resist_attr">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">属性耐性強制ダウン（%）<small>敵テンションの影響を受けず、そのまま属性耐性%に加算</small><small>ロトの伝説、変異イオフォースなどの耐性ダウンはここを−50</small></div>
+    <div class="row-input"><input type="number" id="resist_attr_force" value="0"></div>
+    <div class="row-result key step1" id="r_resist_attr_force">—</div>
   </div>
   <div class="row divider" id="row_inga_kiwami">
     <div class="row-label">因果の極み<small>あり：因果合計にさらに+30%</small></div>
@@ -1633,10 +1638,11 @@ function calc() {
 
   const raw_slash = n('resist_slash');
   const raw_attr  = n('resist_attr');
+  const raw_attr_force = n('resist_attr_force'); // 強制ダウン：敵テンションの影響を受けない
   const slash_factor = raw_slash >= 0 ? (100 + enemy_pct) : (100 - enemy_pct);
   const attr_factor  = raw_attr  >= 0 ? (100 + enemy_pct) : (100 - enemy_pct);
   const effective_slash_pct = Math.floor(raw_slash * slash_factor / 100);  // 斬体耐性%：整数切り捨て
-  const effective_attr_pct  = Math.floor(raw_attr  * attr_factor  / 100);  // 属性耐性%：整数切り捨て
+  const effective_attr_pct  = Math.floor(raw_attr  * attr_factor  / 100) + raw_attr_force;  // 属性耐性%：テンション適用分＋強制ダウン（加算）
   const resist_slash = (100 - effective_slash_pct) / 100;
   const resist_attr  = (100 - effective_attr_pct)  / 100;
 
@@ -1750,6 +1756,7 @@ function calc() {
   $('r_E18').textContent = fd(E18);
   $('r_resist_slash').textContent = fd(resist_slash) + '\n(' + effective_slash_pct + '%)';
   $('r_resist_attr').textContent  = fd(resist_attr)  + '\n(' + effective_attr_pct + '%)';
+  $('r_resist_attr_force').textContent = (raw_attr_force >= 0 ? '+' : '') + raw_attr_force + '%';
   $('r_nezetsu').textContent      = '+' + nezetsu_pct + '%';
   $('r_nezetsu_mind').textContent = '+' + nezetsu_mind_pct + '%';
   $('r_keitou_in').textContent = keitou_pct;
@@ -1854,7 +1861,7 @@ const INPUT_IDS = [
   'keitou','meishou',
   'nezetsu','nezetsu_mind',
   'tension_enemy',
-  'resist_slash','resist_attr',
+  'resist_slash','resist_attr','resist_attr_force',
   'inga','inga_kiwami','fbreak','attr_res_change','flash','kiai',
   'slash_res_change','suijaku','freeze','senisosshitsu',
   'crit_up','crit_type','tsukon',
@@ -1984,7 +1991,7 @@ const DEFAULT_VALUES = {
   keitou:'10', meishou:'10',
   nezetsu:'0', nezetsu_mind:'0',
   tension_enemy:'50',
-  resist_slash:'40', resist_attr:'-25',
+  resist_slash:'40', resist_attr:'-25', resist_attr_force:'0',
   inga:'4', inga_kiwami:'1', fbreak:'2', attr_res_change:'0', flash:'1.8', kiai:'2',
   slash_res_change:'0', suijaku:'0', freeze:'0', senisosshitsu:'0',
   crit_up:'12', crit_type:'super', zone_crit:'0', tsukon:'0', nitouryuu:'100',
