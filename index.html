@@ -37,13 +37,17 @@
   background:#378ADD;
   color:#fff;
 }
+#tabBtnSpell.active{
+  background:#7e3fd1;
+  color:#fff;
+}
 
 /* ===== ダメージ計算機 ===== */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0ede8; color: #1a1a1a; min-height: 100vh; padding: 12px; }
+body.theme-damage, body.theme-spell { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f0ede8; color: #1a1a1a; min-height: 100vh; padding: 12px; }
 .wrap { max-width: 520px; margin: 0 auto; }
-#tab-damage h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
+#tab-damage h1, #tab-spell h1 { font-size: 17px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; }
 
 /* セクションカード */
 .card { background: #fff; border-radius: 10px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
@@ -97,6 +101,8 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
 .result-num { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.01em; }
 .result-num.main { font-size: 26px; color: #fff; }
 .result-unit { font-size: 10px; color: #8ab4d8; }
+.result-yamabiko { font-size: 11px; color: #8ab4d8; margin-top: 5px; }
+.result-yamabiko span { font-size: 14px; font-weight: 600; color: #fff; }
 
 /* 計算式 */
 .formula-box { background: #fff; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; font-size: 11px; color: #666; line-height: 1.7; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
@@ -164,6 +170,7 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
 .result-sticky.job-majin    { background: #12125a; }
 .result-sticky.job-godhan   { background: #0e4020; }
 .result-sticky.job-all      { background: #3a2400; }
+.result-sticky.job-spell    { background: #3b1466; }
 
 
 /* ===== 回復量計算機 ===== */
@@ -504,6 +511,7 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
 
 <div class="tab-switcher">
   <button id="tabBtnDamage" class="tab-btn active" onclick="switchTab('damage')">⚔️ ダメージ</button>
+  <button id="tabBtnSpell" class="tab-btn" onclick="switchTab('spell')">🔮 呪文</button>
   <button id="tabBtnHeal" class="tab-btn" onclick="switchTab('heal')">💚 回復</button>
 </div>
 
@@ -1181,6 +1189,589 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
 <div style="height:16px;"></div>
 </div>
 
+<div class="wrap" id="tab-spell">
+<h1>🔮 DQW 呪文ダメージ計算機</h1>
+
+<!-- 履歴 -->
+<div class="history-box">
+  <div class="card-header">📋 計算結果の保存</div>
+  <div class="history-slot">
+    <div class="history-slot-label">1</div>
+    <div class="history-slot-data">
+      <div class="h-name"><input type="text" id="sp_h1_name" placeholder="メモ（任意）"></div>
+      <div class="h-nums empty" id="sp_h1_nums">未保存</div>
+    </div>
+    <div class="history-slot-btns">
+      <button class="h-btn save"  onclick="sp_historySave(1)">保存</button>
+      <button class="h-btn load"  onclick="sp_historyLoad(1)" id="sp_h1_load" disabled>呼出</button>
+      <button class="h-btn clear" onclick="sp_historyClear(1)" id="sp_h1_clear" disabled>消去</button>
+    </div>
+  </div>
+  <div class="history-slot">
+    <div class="history-slot-label">2</div>
+    <div class="history-slot-data">
+      <div class="h-name"><input type="text" id="sp_h2_name" placeholder="メモ（任意）"></div>
+      <div class="h-nums empty" id="sp_h2_nums">未保存</div>
+    </div>
+    <div class="history-slot-btns">
+      <button class="h-btn save"  onclick="sp_historySave(2)">保存</button>
+      <button class="h-btn load"  onclick="sp_historyLoad(2)" id="sp_h2_load" disabled>呼出</button>
+      <button class="h-btn clear" onclick="sp_historyClear(2)" id="sp_h2_clear" disabled>消去</button>
+    </div>
+  </div>
+  <div class="history-slot">
+    <div class="history-slot-label">3</div>
+    <div class="history-slot-data">
+      <div class="h-name"><input type="text" id="sp_h3_name" placeholder="メモ（任意）"></div>
+      <div class="h-nums empty" id="sp_h3_nums">未保存</div>
+    </div>
+    <div class="history-slot-btns">
+      <button class="h-btn save"  onclick="sp_historySave(3)">保存</button>
+      <button class="h-btn load"  onclick="sp_historyLoad(3)" id="sp_h3_load" disabled>呼出</button>
+      <button class="h-btn clear" onclick="sp_historyClear(3)" id="sp_h3_clear" disabled>消去</button>
+    </div>
+  </div>
+  <div style="padding:8px 12px;">
+    <button class="h-btn" onclick="sp_resetToDefault()" style="background:#f5e0e0;color:#a00000;width:100%;font-size:12px;padding:7px 0;">🔄 デフォルト設定に初期化する</button>
+  </div>
+</div>
+
+<!-- 武器選択 -->
+<div class="card">
+  <div class="card-header">武器（呪文）</div>
+  <div class="row">
+    <div class="row-input" style="width:100%;padding:8px 12px;">
+      <select id="sp_weapon" style="font-size:14px;padding:8px;"></select>
+    </div>
+  </div>
+  <div class="row">
+    <div class="row-label">最小ステ → 最小威力</div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_weapon_min">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">最大ステ → 最大威力<small>攻撃魔力が最大ステ以上でも、この威力が上限（キャップ）</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_weapon_max">—</div>
+  </div>
+</div>
+
+<!-- 攻撃魔力・基礎値 -->
+<div class="card">
+  <div class="card-header">攻撃魔力・基礎値</div>
+  <div class="row">
+    <div class="row-label">攻撃魔力</div>
+    <div class="row-input"><input type="number" id="sp_mag" value="1583"></div>
+    <div class="row-result" id="sp_r_E2">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">レベルアップ（段数）</div>
+    <div class="row-input"><input type="number" id="sp_lv" value="15" min="0" max="20"></div>
+    <div class="row-result" id="sp_r_E4">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">最終攻撃魔力<small>攻撃魔力＋LvUP変化</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_mag_total">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">武器威力（補間値）<small>最小ステ〜最大ステ間を線形補間／最大ステ以上は最大威力</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_power">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 基礎値<small>武器威力（小数切り捨て） 乱数幅±floor(基礎値/16)±1</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E7">—</div>
+  </div>
+</div>
+
+<!-- テンション/ゾーン -->
+<div class="card">
+  <div class="card-header">テンション</div>
+  <div class="row">
+    <div class="row-label">味方テンション</div>
+    <div class="row-input">
+      <select id="sp_tension_ally">
+        <option value="0">0 → +0%</option>
+        <option value="10">5 → +10%</option>
+        <option value="20">20 → +20%</option>
+        <option value="30">50 → +30%</option>
+        <option value="50" selected>100 → +50%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_E10">—</div>
+  </div>
+  <!-- zone_tension は computeZoneFromParty() で自動設定されるため非表示 -->
+  <select id="sp_zone_tension" style="display:none"><option value="0">0</option><option value="50">50</option></select>
+</div>
+
+<!-- ゾーン編成 -->
+<div class="card">
+  <div class="card-header">ゾーン編成</div>
+  <div class="row">
+    <div class="row-label">自分<small>ゾーンに入った場合：テンション100扱い＋職業特性</small></div>
+    <div class="row-input">
+      <select id="sp_zone_party_self">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（スキル+150）</option>
+        <option value="dragon">ドラゴン（スキル+150）</option>
+        <option value="tokiwatari">時渡りの剣士（スキル+150）</option>
+        <option value="makentou_z">魔剣士（属性+150）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+150）</option>
+        <option value="majin_z">魔人（暴走+230）</option>
+        <option value="daimadoushi">大魔導士（暴走+230）</option>
+        <option value="other">その他（T×1.5のみ）</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_zone_party_self">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">仲間1<small>ゾーンに入った場合：職業特性のみ</small></div>
+    <div class="row-input">
+      <select id="sp_zone_party_1">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（スキル+45）</option>
+        <option value="dragon">ドラゴン（スキル+45）</option>
+        <option value="tokiwatari">時渡りの剣士（スキル+45）</option>
+        <option value="superstar">スーパースター（スキル+45）</option>
+        <option value="makentou_z">魔剣士（属性+45）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+45）</option>
+        <option value="majin_z">魔人（暴走+69）</option>
+        <option value="daimadoushi">大魔導士（暴走+69）</option>
+        <option value="other">その他（効果なし）</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_zone_party_1">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">仲間2</div>
+    <div class="row-input">
+      <select id="sp_zone_party_2">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（スキル+45）</option>
+        <option value="dragon">ドラゴン（スキル+45）</option>
+        <option value="tokiwatari">時渡りの剣士（スキル+45）</option>
+        <option value="superstar">スーパースター（スキル+45）</option>
+        <option value="makentou_z">魔剣士（属性+45）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+45）</option>
+        <option value="majin_z">魔人（暴走+69）</option>
+        <option value="daimadoushi">大魔導士（暴走+69）</option>
+        <option value="other">その他（効果なし）</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_zone_party_2">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">仲間3</div>
+    <div class="row-input">
+      <select id="sp_zone_party_3">
+        <option value="none" selected>ゾーンなし</option>
+        <option value="godhan">ゴッドハンド（スキル+45）</option>
+        <option value="dragon">ドラゴン（スキル+45）</option>
+        <option value="tokiwatari">時渡りの剣士（スキル+45）</option>
+        <option value="superstar">スーパースター（スキル+45）</option>
+        <option value="makentou_z">魔剣士（属性+45）</option>
+        <option value="tenchiraisei">天地雷鳴士（属性+45）</option>
+        <option value="majin_z">魔人（暴走+69）</option>
+        <option value="daimadoushi">大魔導士（暴走+69）</option>
+        <option value="other">その他（効果なし）</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_zone_party_3">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ ゾーン合計<small>同じ職業の重複は除外。自分がいるとスキル/属性/暴走に×1.5のテンション補正も追加</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key" id="sp_r_zone_total">—</div>
+  </div>
+</div>
+
+<!-- 呪文ダメージ倍率 -->
+<div class="card">
+  <div class="card-header step1">呪文ダメージ倍率</div>
+  <div class="row">
+    <div class="row-label">呪文ダメージ倍率（%）<small>他の加算グループとは乗算</small></div>
+    <div class="row-input"><input type="number" id="sp_slash" value="70"></div>
+    <div class="row-result" id="sp_r_E11">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 呪文ダメージ倍率合計<small>(100+倍率×T)/100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_slash_mult">—</div>
+  </div>
+</div>
+
+<!-- 呪文ダメージ -->
+<div class="card">
+  <div class="card-header step1">呪文ダメージ</div>
+      <div class="row">
+    <div class="row-label">スキルダメージアップ（段数）<small>ラーミアなど　1段階=20%</small></div>
+    <div class="row-input">
+      <select id="sp_skill_up">
+        <option value="0">なし　+0%</option>
+        <option value="20">1段階 +20%</option>
+        <option value="40" selected>2段階 +40%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_E12">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">呪文ダメージアップ（段数）<small>（魔力覚醒など）　1段階=20%</small></div>
+    <div class="row-input">
+      <select id="sp_spell_up">
+        <option value="0" selected>なし　+0%</option>
+        <option value="20">1段階 +20%</option>
+        <option value="40">2段階 +40%</option>
+        <option value="60">3段階 +60%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_spell_up">—</div>
+  </div>
+    <div class="row">
+    <div class="row-label">おうえん</div>
+    <div class="row-input">
+      <select id="sp_cheer">
+        <option value="80" selected>あり　+80%</option>
+        <option value="0">なし　+0%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_E13">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">魔響の詠唱</div>
+    <div class="row-input">
+      <select id="sp_chant">
+        <option value="0" selected>なし　+0%</option>
+        <option value="20">あり　+20%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_chant">—</div>
+  </div>
+  <!-- zone_slash は computeZoneFromParty() で自動計算 -->
+  <select id="sp_zone_slash" style="display:none"><option value="0">0</option></select>
+  <div class="row">
+    <div class="row-label">ゾーン（ゴドハン・ドラゴン・時渡り）</div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_zone_slash">—</div>
+  </div>
+      <div class="row divider">
+    <div class="row-label star">★ 呪文合計<small>(100+スキルUP+おうえん+魔響の詠唱+呪文ダメージアップ+ゾーン)/100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E14">—</div>
+  </div>
+</div>
+
+<!-- 属性ダメージ -->
+<div class="card">
+  <div class="card-header step1">属性ダメージ</div>
+  <div class="row">
+    <div class="row-label">属性倍率（%）<small id="sp_force_label" style="display:none;color:#c05000;">フォース適用: ÷2切り捨て後にT倍率</small></div>
+    <label style="display:flex;align-items:center;gap:3px;font-size:11px;color:#555;white-space:nowrap;cursor:pointer;padding:0 4px 0 6px;flex-shrink:0;">
+      <input type="checkbox" id="sp_force_check" style="width:14px;height:14px;cursor:pointer;" checked>フォース
+    </label>
+    <div class="row-input"><input type="number" id="sp_attr" value="79"></div>
+    <div class="row-result" id="sp_r_E15">—</div>
+  </div>
+  <div class="row" id="sp_row_fc">
+    <div class="row-label">フォースチャージ（段数）</div>
+    <div class="row-input"><input type="number" id="sp_fc" value="4" min="0" max="6"></div>
+    <div class="row-result" id="sp_r_E16">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">フォースバースト</div>
+    <div class="row-input">
+      <select id="sp_fburst">
+        <option value="0" selected>なし　+0%</option>
+        <option value="50">あり　+50%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_fburst">—</div>
+  </div>
+    <!-- zone_attr は computeZoneFromParty() で自動計算 -->
+  <select id="sp_zone_attr" style="display:none"><option value="0">0</option></select>
+  <div class="row">
+    <div class="row-label">ゾーン（魔剣士・天地雷鳴士）<small id="sp_zone_attr_force_note" style="display:none;color:#c05000;">フォース適用: ゾーン値÷2切り捨て</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_zone_attr">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 属性合計<small>(100+属性×T+FC×30+フォースバースト+ゾーン)/100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E18">—</div>
+  </div>
+</div>
+
+<!-- 系統・名称ダメージ -->
+<div class="card">
+  <div class="card-header step1">系統・名称ダメージ</div>
+      <div class="row">
+    <div class="row-label">系統倍率（%）</div>
+    <div class="row-input"><input type="number" id="sp_keitou" value="10"></div>
+    <div class="row-result" id="sp_r_keitou_in">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 系統合計<small>(系統%×T + 100) / 100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E20">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">名称倍率（%）</div>
+    <div class="row-input"><input type="number" id="sp_meishou" value="10"></div>
+    <div class="row-result" id="sp_r_meishou_in">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 名称合計<small>(名称%×T + 100) / 100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E21">—</div>
+  </div>
+</div>
+
+<!-- 敵テンション -->
+<div class="card">
+  <div class="card-header">敵テンション</div>
+  <div class="row">
+    <div class="row-label">敵テンション<small>耐性補正に連動</small></div>
+    <div class="row-input">
+      <select id="sp_tension_enemy">
+        <option value="50" selected>100 → +50%</option>
+        <option value="30">50 → +30%</option>
+        <option value="20">20 → +20%</option>
+        <option value="10">5 → +10%</option>
+        <option value="0">0 → 0%</option>
+        <option value="-10">-5 → -10%</option>
+        <option value="-20">-20 → -20%</option>
+        <option value="-30">-50 → -30%</option>
+        <option value="-50">-100 → -50%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_tension_enemy">—</div>
+  </div>
+</div>
+
+<!-- 耐性補正 -->
+<div class="card">
+  <div class="card-header">耐性補正</div>
+  <div class="row">
+    <div class="row-label star">★ 呪文耐性（%）<small>(100 − 入力%×敵T補正) / 100</small></div>
+    <div class="row-input"><input type="number" id="sp_resist_slash" value="40"></div>
+    <div class="row-result key step1" id="sp_r_resist_slash">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label star">★ 属性耐性（%）<small>(100 − 入力%×敵T補正) / 100</small></div>
+    <div class="row-input"><input type="number" id="sp_resist_attr" value="-25"></div>
+    <div class="row-result key step1" id="sp_r_resist_attr">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">属性耐性強制ダウン（%）<small>敵テンションの影響を受けず、そのまま属性耐性%に加算</small><small>ロトの伝説、変異イオフォースなどの耐性ダウンはここを−50</small></div>
+    <div class="row-input"><input type="number" id="sp_resist_attr_force" value="0"></div>
+    <div class="row-result key step1" id="sp_r_resist_attr_force">—</div>
+  </div>
+  <div class="row divider" id="sp_row_inga_kiwami">
+    <div class="row-label">因果の極み<small>あり：因果合計にさらに+30%</small></div>
+    <div class="row-input">
+      <select id="sp_inga_kiwami">
+        <option value="0">なし</option>
+        <option value="1" selected>あり　+30%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_inga_kiwami">—</div>
+  </div>
+  <div class="row" id="sp_row_inga">
+    <div class="row-label">因果（段数）</div>
+    <div class="row-input"><input type="number" id="sp_inga" value="4" min="0" max="6"></div>
+    <div class="row-result" id="sp_r_inga_in">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label star">★ 因果合計<small>1 + (段数×20 + 極み×30) / 100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E22">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label">フォースブレイク（段数）</div>
+    <div class="row-input"><input type="number" id="sp_fbreak" value="2" min="0" max="2"></div>
+    <div class="row-result" id="sp_r_fbreak_in">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">属性耐性変化（段数）<small>−3〜+3、1段階で属性耐性−20%</small></div>
+    <div class="row-input"><input type="number" id="sp_attr_res_change" value="0" min="-3" max="3"></div>
+    <div class="row-result" id="sp_r_attr_res_change_in">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label star">★ フォースブレイク＋属性耐性変化<small>(FB段数×30 − 耐性変化段数×20) / 100 + 1</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E23">—</div>
+  </div>
+    </div>
+
+<!-- 呪文耐性変化 -->
+<div class="card">
+  <div class="card-header step1">呪文耐性変化</div>
+    <div class="row">
+    <div class="row-label">衰弱<small>ラーミアなど</small></div>
+    <div class="row-input">
+      <select id="sp_suijaku">
+        <option value="0" selected>なし　+0%</option>
+        <option value="10">1段階　+10%</option>
+        <option value="15">2段階　+15%</option>
+        <option value="20">3段階　+20%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_suijaku">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">凍結<small>グリ爪など</small></div>
+    <div class="row-input">
+      <select id="sp_freeze">
+        <option value="0" selected>なし　+0%</option>
+        <option value="10">1段階　+10%</option>
+        <option value="15">2段階　+15%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_freeze">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">戦意喪失</div>
+    <div class="row-input">
+      <select id="sp_senisosshitsu">
+        <option value="0" selected>なし　+0%</option>
+        <option value="5">1段階　+5%</option>
+        <option value="10">2段階　+10%</option>
+        <option value="25">3段階　+25%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_senisosshitsu">—</div>
+  </div>
+  <div class="row">
+    <div class="row-label">呪文耐性減<small>ディバインスペルなど</small></div>
+    <div class="row-input">
+      <select id="sp_res_down">
+        <option value="0" selected>なし　+0%</option>
+        <option value="20">1段階　+20%</option>
+        <option value="40">2段階　+40%</option>
+        <option value="60">3段階　+60%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_res_down">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 呪文耐性変化合計<small>(100 + 合計%) / 100</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_slash_res_total">—</div>
+  </div>
+</div>
+
+<!-- 暴走ダメージ -->
+<div class="card">
+  <div class="card-header step1">暴走ダメージ</div>
+  <div class="row">
+    <div class="row-label">暴走ダメアップ（%）</div>
+    <div class="row-input"><input type="number" id="sp_crit_up" value="12" min="0"></div>
+    <div class="row-result" id="sp_r_E26">—</div>
+  </div>
+    <div class="row">
+    <div class="row-label">暴走<small>暴走は150〜200%の乱数、超暴走は固定値</small></div>
+    <div class="row-input">
+      <select id="sp_crit_type">
+        <option value="normal">なし　100%</option>
+        <option value="on" selected>暴走　175%</option>
+        <option value="super1">超暴走lv1　300%</option>
+        <option value="super2">超暴走lv2　410%</option>
+        <option value="super3">超暴走lv3　530%</option>
+        <option value="super4">超暴走lv4　650%</option>
+        <option value="supermax">超暴走max　770%</option>
+      </select>
+    </div>
+    <div class="row-result" id="sp_r_crit_in">—</div>
+  </div>
+  <!-- zone_crit は computeZoneFromParty() で自動計算 -->
+  <select id="sp_zone_crit" style="display:none"><option value="0">0</option></select>
+  <div class="row">
+    <div class="row-label">ゾーン（魔人・大魔導士）</div>
+    <div class="row-spacer"></div>
+    <div class="row-result" id="sp_r_zone_crit">—</div>
+  </div>
+  <div class="row divider">
+    <div class="row-label star">★ 暴走合計<small>(暴走種別%+暴走ダメアップ+ゾーン)/100　なしは×1.0</small></div>
+    <div class="row-spacer"></div>
+    <div class="row-result key step1" id="sp_r_E27">—</div>
+  </div>
+<div class="row divider">
+    <div class="row-label star">★ 暴走ダメージ(ケキなど)</div>
+    <div class="row-input">
+      <select id="sp_flash">
+        <option value="1">なし ×1.0</option>
+        <option value="1.4">1段階 ×1.4</option>
+        <option value="1.8" selected>2段階 ×1.8</option>
+      </select>
+    </div>
+    <div class="row-result key step1" id="sp_r_E24">—</div>
+  </div>
+</div>
+
+<!-- 計算式メモ -->
+<div class="formula-box">
+  <strong>計算式：</strong><br>
+  ① LvUP倍率：floor(1.04^段数 × 100) / 100　→　最終攻撃魔力 = floor(攻撃魔力 × 倍率)<br>
+  ② 武器威力 = 最小威力 + (最大威力 − 最小威力) × (最終攻撃魔力 − 最小ステ) / (最大ステ − 最小ステ)　※最大ステ以上は最大威力でキャップ<br>
+  &emsp;基礎値 = floor( 武器威力 )<br>
+  &emsp;乱数幅 = floor( 基礎値 / 16 )　→　下限 = floor(基礎値 − 乱数幅) − 1　／　上限 = floor(基礎値 + 乱数幅) + 1<br>
+  ③ テンション補正（T = 1 + 味方テンション% / 100）は以下の%値に影響：<br>
+  &emsp;・呪文ダメージ倍率% / 属性% / 系統% / 名称% / 暴走ダメアップ% → floor( 入力値 × T )　← 整数切り捨て<br>
+  &emsp;・呪文耐性% / 属性耐性% → floor( 入力値 × 敵T補正 / 100 )　← 整数切り捨て<br>
+  ④ 各倍率（%→倍率変換後は小数第3位切り捨て）：<br>
+  &emsp;呪文ダメージ倍率合計 = floor( (100 + 倍率%) / 100 × 1000 ) / 1000　← 他の加算グループとは別掛け（乗算）<br>
+  &emsp;呪文合計 = floor( (100 + スキルUP + おうえん + 魔響の詠唱 + 呪文ダメージアップ + ゾーン) / 100 × 1000 ) / 1000<br>
+  &emsp;属性合計 = floor( (100 + 属性% + FC×30 + フォースバースト + ゾーン) / 100 × 1000 ) / 1000<br>
+  &emsp;系統合計 = floor( (100 + 系統%) / 100 × 1000 ) / 1000　／　名称合計 = floor( (100 + 名称%) / 100 × 1000 ) / 1000<br>
+  &emsp;暴走合計 = (暴走種別% + 暴走ダメアップ% + ゾーン) / 100　← 暴走なしは強制 1.0（暴走ダメージ(ケキなど)も強制 1.0）<br>
+  &emsp;暴走種別%：なし100 ／ 暴走175（乱数150〜200）／ 超暴走 lv1=300・lv2=410・lv3=530・lv4=650・max=770（超暴走は乱数なし）<br>
+  &emsp;呪文耐性変化合計 = (100 + 衰弱 + 凍結 + 戦意喪失 + 呪文耐性減) / 100<br>
+  <span class="step1-text">⑤ ダメージ = floor( 基礎値 × 呪文ダメージ倍率合計 × 呪文合計 × 属性合計 × 系統合計 × 名称合計 × 因果(1+段数×20%+極み30%) × (フォースブレイク＋属性耐性変化) × 呪文耐性 × 属性耐性 × 暴走ダメージ(ケキなど) × 暴走合計 × 呪文耐性変化合計 )</span><br>
+  ※ 最小は下限基礎値、最大は上限基礎値で同様に計算（暴走%は通常の暴走のみ 150〜200% の乱数）<br>
+  ※ 山彦ダメージ = floor( 中央値ダメージ × 80% )<br>
+  <br>
+  🔗 <a href="https://github.com/arudqw/dqw-damege-calc" target="_blank" style="color:#1a6ab1;">https://github.com/arudqw/dqw-damege-calc</a>
+</div>
+
+<!-- 初期値・プリセットの書き出し -->
+<div class="card">
+  <div class="card-header">初期値・プリセットの書き出し</div>
+  <div style="padding:10px 12px;">
+    <div style="font-size:11px;color:#666;line-height:1.6;margin-bottom:8px;">現在の入力値と、保存済みの履歴スロットをテキストにします。コピーしてチャットに貼ると、初期値・プリセットとして設定できます。</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="h-btn save" onclick="sp_exportValues()">現在の値を書き出す</button>
+      <button class="h-btn load" id="sp_export_copy" onclick="sp_copyExport()" disabled>コピー</button>
+      <span id="sp_export_msg" style="font-size:11px;color:#0a5c30;"></span>
+    </div>
+    <textarea id="sp_export_text" readonly rows="6" placeholder="「現在の値を書き出す」を押すとここに表示されます" style="width:100%;margin-top:8px;font-size:11px;font-family:monospace;border:1px solid #ddd;border-radius:6px;padding:6px;"></textarea>
+  </div>
+</div>
+
+<!-- 最終結果（sticky） -->
+<div class="result-sticky job-spell" id="sp_result_sticky">
+  <div class="result-grid">
+    <div>
+      <div class="result-label">最小ダメージ</div>
+      <div class="result-num" id="sp_result_min">0</div>
+      <div class="result-unit">ダメージ</div>
+    </div>
+    <div>
+      <div class="result-label">中央値</div>
+      <div class="result-num main" id="sp_result">0</div>
+      <div class="result-unit">ダメージ</div>
+      <div class="result-yamabiko">山彦 <span id="sp_result_yamabiko">0</span></div>
+    </div>
+    <div>
+      <div class="result-label">最大ダメージ</div>
+      <div class="result-num" id="sp_result_max">0</div>
+      <div class="result-unit">ダメージ</div>
+    </div>
+  </div>
+</div>
+<div style="height:16px;"></div>
+</div>
+
 <div class="heal-wrap" id="tab-heal">
   <h1>DQW 回復量計算機</h1>
   <div class="heal-sub-title">基礎回復量 × スキルHP回復効果 × とくぎ/呪文HP回復効果</div>
@@ -1357,13 +1948,14 @@ body.theme-damage { font-family: 'Helvetica Neue', Arial, sans-serif; background
 <script>
 
 function switchTab(tab){
-  const isDamage = tab === 'damage';
-  document.getElementById('tab-damage').style.display = isDamage ? '' : 'none';
-  document.getElementById('tab-heal').style.display = isDamage ? 'none' : '';
-  document.body.classList.toggle('theme-damage', isDamage);
-  document.body.classList.toggle('theme-heal', !isDamage);
-  document.getElementById('tabBtnDamage').classList.toggle('active', isDamage);
-  document.getElementById('tabBtnHeal').classList.toggle('active', !isDamage);
+  const tabs = ['damage','spell','heal'];
+  if (!tabs.includes(tab)) tab = 'damage';
+  tabs.forEach(t => {
+    const on = t === tab;
+    document.getElementById('tab-' + t).style.display = on ? '' : 'none';
+    document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', on);
+    document.body.classList.toggle('theme-' + t, on);
+  });
   try { localStorage.setItem('dqw_active_tab', tab); } catch(e) {}
 }
 const __savedTab = (function(){ try { return localStorage.getItem('dqw_active_tab'); } catch(e){ return null; } })() || 'damage';
@@ -2034,6 +2626,485 @@ if (!slots[1]) {
 
 [1,2,3].forEach(i => historyUpdateUI(i));
 
+</script>
+
+<script>
+// ===== 呪文ダメージ計算機（物理ダメージ計算機の複製）=====
+// 全要素IDに sp_ 接頭辞を付けて物理タブと独立。職業の区別なし（ALL相当）。
+(function(){
+const $ = id => document.getElementById('sp_' + id);
+const n = id => parseFloat($(id).value) || 0;
+const nJob = n; // 職業区別なし：全項目を常に有効として読む
+
+// ===== ゾーン編成 =====
+// type: 'slash' / 'attr' / 'crit' / null
+// selfBonus: 自分がこの職業でゾーンに入った時の特性ボーナス
+// allyBonus: 仲間がこの職業でゾーンに入った時の特性ボーナス
+// 同じ職業は何人いても1回のみカウント（先に処理した方優先）
+const ZONE_JOB_DEFS = {
+  none:         { type: null,    selfBonus: 0,   allyBonus: 0 },
+  godhan:       { type: 'slash', selfBonus: 150, allyBonus: 45 },
+  dragon:       { type: 'slash', selfBonus: 150, allyBonus: 45 },
+  tokiwatari:   { type: 'slash', selfBonus: 150, allyBonus: 45 },
+  superstar:    { type: 'slash', selfBonus: 0,   allyBonus: 45 }, // 仲間専用
+  makentou_z:   { type: 'attr',  selfBonus: 150, allyBonus: 45 },
+  tenchiraisei: { type: 'attr',  selfBonus: 150, allyBonus: 45 },
+  majin_z:      { type: 'crit',  selfBonus: 230, allyBonus: 69 },
+  daimadoushi:  { type: 'crit',  selfBonus: 230, allyBonus: 69 },
+  other:        { type: null,    selfBonus: 0,   allyBonus: 0 },
+};
+
+function computeZoneFromParty() {
+  const selfJob   = $('zone_party_self').value;
+  const allyJobs  = ['zone_party_1','zone_party_2','zone_party_3'].map(id => $(id).value);
+  const selfInZone = selfJob !== 'none';
+
+  let slash = 0, attr = 0, crit = 0;
+  const usedJobs = new Set();
+
+  // 自分を先に処理（同じ職業があれば自分側のボーナスを優先）
+  if (selfJob !== 'none') {
+    usedJobs.add(selfJob);
+    const def = ZONE_JOB_DEFS[selfJob] || ZONE_JOB_DEFS.other;
+    if (def.type === 'slash') slash += def.selfBonus;
+    if (def.type === 'attr')  attr  += def.selfBonus;
+    if (def.type === 'crit')  crit  += def.selfBonus;
+  }
+
+  // 仲間を処理（同じ職業は重複カウントしない）
+  for (const job of allyJobs) {
+    if (job === 'none' || usedJobs.has(job)) continue;
+    usedJobs.add(job);
+    const def = ZONE_JOB_DEFS[job] || ZONE_JOB_DEFS.other;
+    if (def.type === 'slash') slash += def.allyBonus;
+    if (def.type === 'attr')  attr  += def.allyBonus;
+    if (def.type === 'crit')  crit  += def.allyBonus;
+  }
+
+  return { selfInZone, slash, attr, crit };
+}
+
+// ===== 呪文武器データ =====
+// minStat/minPower: 攻撃魔力が最小ステのときの威力 / maxStat/maxPower: 最大ステのときの威力（これ以上はキャップ）
+const SPELL_WEAPONS = [
+  { id: 'love',     name: 'ラブ・ストリーム(1体)', minStat: 15, minPower: 633, maxStat: 1950, maxPower: 12945 },
+  { id: 'melgaia',  name: 'メラガイアー',          minStat: 10, minPower: 600, maxStat: 2400, maxPower: 11000 }
+];
+
+function getWeapon() {
+  const id = $('weapon').value;
+  return SPELL_WEAPONS.find(w => w.id === id) || SPELL_WEAPONS[0];
+}
+
+function populateWeapons() {
+  const sel = $('weapon');
+  SPELL_WEAPONS.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.id;
+    opt.textContent = w.name;
+    sel.appendChild(opt);
+  });
+}
+
+// ===== 暴走の種類（%）：乱数幅 min〜max、中央 mid =====
+// 乱数があるのは通常の暴走（150〜200%、中央175）のみ。超暴走lv1〜maxは固定値
+const RAMPAGE_TYPES = {
+  normal:   { name: 'なし',        min: 100, mid: 100, max: 100 },
+  on:       { name: '暴走',        min: 150, mid: 175, max: 200 },
+  super1:   { name: '超暴走lv1',  min: 300, mid: 300, max: 300 },
+  super2:   { name: '超暴走lv2',  min: 410, mid: 410, max: 410 },
+  super3:   { name: '超暴走lv3',  min: 530, mid: 530, max: 530 },
+  super4:   { name: '超暴走lv4',  min: 650, mid: 650, max: 650 },
+  supermax: { name: '超暴走max',  min: 770, mid: 770, max: 770 }
+};
+
+function calc() {
+  // 攻撃魔力（レベルアップ適用）
+  const E2 = n('mag');
+  const lvSteps = Math.round(n('lv'));
+  const lvRate = lvSteps === 0 ? 1 : Math.floor(Math.pow(1.04, lvSteps) * 100) / 100;
+  const magAfterLv = Math.floor(E2 * lvRate);
+  const E4 = magAfterLv - E2;
+  const magTotal = E2 + E4;
+
+  // 武器威力：最小ステ〜最大ステ間を線形補間。最大ステ以上は最大威力でキャップ（最小ステ以下は最小威力）
+  const weapon = getWeapon();
+  let powerRaw, powerCapped = false;
+  if (magTotal >= weapon.maxStat) {
+    powerRaw = weapon.maxPower;
+    powerCapped = true;
+  } else if (magTotal <= weapon.minStat) {
+    powerRaw = weapon.minPower;
+  } else {
+    powerRaw = weapon.minPower
+      + (weapon.maxPower - weapon.minPower) * (magTotal - weapon.minStat) / (weapon.maxStat - weapon.minStat);
+  }
+  const E7 = Math.floor(powerRaw); // 基礎値
+
+  const ally_pct = parseFloat($('tension_ally').value);
+  const enemy_pct = parseFloat($('tension_enemy').value);
+  // ゾーン編成から自動計算
+  const zoneParty = computeZoneFromParty();
+  // ゾーンありの場合はテンション100固定（+50%）、なしの場合は味方テンション選択値を使用
+  const effective_ally_pct = zoneParty.selfInZone ? 50 : ally_pct;
+  const E10 = 1 + effective_ally_pct / 100;
+
+  // ---- 呪文ダメージ倍率（独立：加算グループとは乗算）----
+  const E11 = Math.floor(n('slash') * E10);       // 呪文ダメージ倍率%：テンション補正後に整数切り捨て
+  const slashMult = Math.floor((E11 + 100) / 100 * 1000) / 1000; // 倍率：小数第3位切り捨て
+
+  // ---- 呪文ダメージ（加算グループ）----
+  const E12 = n('skill_up');
+  const E13 = n('cheer');
+  const chant = n('chant');                       // 魔響の詠唱（なし0／あり20）
+  const spellUp = n('spell_up');                  // 呪文ダメージアップ（魔力覚醒など）：加算
+  const zoneSlash = zoneParty.slash;               // ゾーン（スキル）：自動計算
+  const E14 = Math.floor((100 + E12 + E13 + chant + spellUp + zoneSlash) / 100 * 1000) / 1000;
+
+  // ---- 属性ダメージ ----
+  const forceCheck = $('force_check').checked;
+  const attrRaw = forceCheck ? Math.floor(n('attr') / 2) : n('attr');  // フォースあり: ÷2切り捨て
+  const E15 = Math.floor(attrRaw * E10);         // 属性倍率%：テンション倍率適用後整数切り捨て
+  $('force_label').style.display = forceCheck ? 'block' : 'none';
+  const E16 = nJob('fc') * 30;
+  const fburst = n('fburst');                    // フォースバースト（なし0／あり50）
+  // 属性ゾーン：フォースありの場合はゾーン値÷2切り捨て
+  const zoneAttrRaw = zoneParty.attr;
+  const zoneAttrVal = forceCheck ? Math.floor(zoneAttrRaw / 2) : zoneAttrRaw;
+  $('zone_attr_force_note').style.display = (forceCheck && zoneAttrRaw > 0) ? 'block' : 'none';
+  const E18 = Math.floor((100 + E15 + E16 + fburst + zoneAttrVal) / 100 * 1000) / 1000;  // 倍率：小数第3位切り捨て
+
+  // ---- 耐性（resist_slash = 呪文耐性）----
+  const raw_slash = n('resist_slash');
+  const raw_attr  = n('resist_attr');
+  const raw_attr_force = n('resist_attr_force'); // 強制ダウン：敵テンションの影響を受けない
+  const slash_factor = raw_slash >= 0 ? (100 + enemy_pct) : (100 - enemy_pct);
+  const attr_factor  = raw_attr  >= 0 ? (100 + enemy_pct) : (100 - enemy_pct);
+  const effective_slash_pct = Math.floor(raw_slash * slash_factor / 100);  // 呪文耐性%：整数切り捨て
+  const effective_attr_pct  = Math.floor(raw_attr  * attr_factor  / 100) + raw_attr_force;  // 属性耐性%：テンション適用分＋強制ダウン（加算）
+  const resist_slash = (100 - effective_slash_pct) / 100;
+  const resist_attr  = (100 - effective_attr_pct)  / 100;
+
+  // ---- 系統・名称 ----
+  const keitou_pct  = Math.floor(n('keitou') * E10);  // 系統倍率%：整数切り捨て
+  const meishou_pct = Math.floor(n('meishou') * E10); // 名称倍率%：整数切り捨て
+  const E20 = Math.floor((keitou_pct + 100) / 100 * 1000) / 1000;
+  const E21 = Math.floor((meishou_pct + 100) / 100 * 1000) / 1000; // 倍率：小数第3位切り捨て
+
+  // ---- 因果・フォースブレイク ----
+  const ingaKiwami = nJob('inga_kiwami');
+  const E22 = 1 + (nJob('inga') * 20 + ingaKiwami * 30) / 100;
+  const attrResChangeSteps = n('attr_res_change');
+  const E23 = 1 + (n('fbreak') * 30 - attrResChangeSteps * 20) / 100;
+
+  // ---- 暴走（なし100% / 暴走175% / 超暴走lv1〜max）----
+  // 暴走なしの場合は暴走ダメアップ・ゾーン暴走・暴走ダメージ(ケキなど)を無効（強制1.0）
+  // 暴走種別%には乱数幅があるため、最小/中央/最大を別々に計算する
+  const crit_up_pct = Math.floor(n('crit_up') * E10); // 暴走ダメアップ%：整数切り捨て
+  const rampageType = RAMPAGE_TYPES[$('crit_type').value] || RAMPAGE_TYPES.on;
+  const rampageOn = rampageType !== RAMPAGE_TYPES.normal;
+  const zoneCrit = zoneParty.crit;                    // ゾーン（暴走）：自動計算
+  const critTotal = pct => rampageOn ? (pct + crit_up_pct + zoneCrit) / 100 : 1.0;
+  const E26 = critTotal(rampageType.mid);
+  const E27 = E26;
+  const E27_min = critTotal(rampageType.min);
+  const E27_max = critTotal(rampageType.max);
+  const E24eff = rampageOn ? parseFloat($('flash').value) : 1.0; // 暴走ダメージ(ケキなど)
+
+  // ---- 基礎値の乱数幅 ----
+  const rand = Math.floor(E7 / 16);
+  const E7_mid = E7;
+  const E7_min = Math.floor(E7 - rand) - 1;
+  const E7_max = Math.floor(E7 + rand) + 1;
+
+  // ---- 呪文耐性変化合計 ----
+  const suijaku        = parseFloat($('suijaku').value);
+  const freeze         = parseFloat($('freeze').value);
+  const senisosshitsu  = parseFloat($('senisosshitsu').value);
+  const resDown        = parseFloat($('res_down').value);   // 呪文耐性減（ディバインスペルなど）
+  const slashResTotal  = (100 + suijaku + freeze + senisosshitsu + resDown) / 100;
+
+  // ダメージ = floor( 基礎値 × 全倍率 )
+  const calcDamage = (base, crit) =>
+    Math.floor(base * slashMult * E14 * E18 * E20 * E21 * E22 * E23 * resist_slash * resist_attr * E24eff * crit * slashResTotal);
+
+  const E28     = calcDamage(E7_mid, E27);
+  const E28_min = calcDamage(E7_min, E27_min);
+  const E28_max = calcDamage(E7_max, E27_max);
+  const E28_yamabiko = Math.floor(E28 * 80 / 100); // 山彦ダメージ：中央値ダメージの80%
+
+  const fi = v => Math.round(v).toLocaleString('ja-JP');
+  const fd = v => v.toFixed(3);
+
+  $('r_weapon_min').textContent = weapon.minStat + '→' + weapon.minPower;
+  $('r_weapon_max').textContent = weapon.maxStat + '→' + weapon.maxPower;
+  $('r_E2').textContent = fi(E2);
+  $('r_E4').textContent = fi(E4);
+  $('r_mag_total').textContent = fi(magTotal);
+  $('r_power').textContent = powerCapped
+    ? fi(weapon.maxPower) + '\n(上限)'
+    : powerRaw.toLocaleString('ja-JP', { maximumFractionDigits: 2 });
+  $('r_E7').textContent = fi(E7) + '\n' + fi(E7_min) + '〜' + fi(E7_max);
+  $('r_E10').textContent = '×' + E10.toFixed(2);
+  $('r_tension_enemy').textContent = (enemy_pct >= 0 ? '+' : '') + enemy_pct + '%';
+  $('r_E11').textContent = E11 + '%';
+  $('r_slash_mult').textContent = fd(slashMult);
+  $('r_E12').textContent = E12;
+  $('r_E13').textContent = E13;
+  $('r_chant').textContent = chant;
+  $('r_E14').textContent = fd(E14);
+  $('r_E15').textContent = fd(E15);
+  $('r_E16').textContent = E16;
+  $('r_fburst').textContent = fburst;
+  $('r_spell_up').textContent = spellUp;
+  $('r_E18').textContent = fd(E18);
+  $('r_resist_slash').textContent = fd(resist_slash) + '\n(' + effective_slash_pct + '%)';
+  $('r_resist_attr').textContent  = fd(resist_attr)  + '\n(' + effective_attr_pct + '%)';
+  $('r_resist_attr_force').textContent = (raw_attr_force >= 0 ? '+' : '') + raw_attr_force + '%';
+  $('r_keitou_in').textContent = keitou_pct;
+  $('r_E20').textContent = fd(E20);
+  $('r_meishou_in').textContent = meishou_pct;
+  $('r_E21').textContent = fd(E21);
+  $('r_inga_kiwami').textContent = ingaKiwami ? '+30%' : '—';
+  $('r_inga_in').textContent = nJob('inga');
+  $('r_E22').textContent = fd(E22);
+  $('r_fbreak_in').textContent = n('fbreak');
+  $('r_attr_res_change_in').textContent = (attrResChangeSteps >= 0 ? '+' : '') + (attrResChangeSteps * -20) + '%';
+  $('r_E23').textContent = fd(E23);
+  $('r_E24').textContent = fd(E24eff);
+  $('r_E26').textContent = fd(E26);
+  // ゾーン編成の結果表示
+  const zoneLabels = {slash:'スキル', attr:'属性', crit:'暴走'};
+  ['zone_party_self','zone_party_1','zone_party_2','zone_party_3'].forEach(id => {
+    const el = $('r_' + id);
+    if (!el) return;
+    const val = $(id).value;
+    if (val === 'none') { el.textContent = '—'; return; }
+    const def = ZONE_JOB_DEFS[val] || ZONE_JOB_DEFS.other;
+    const isSelf = id === 'zone_party_self';
+    const bonus = isSelf ? def.selfBonus : def.allyBonus;
+    el.textContent = def.type ? `${zoneLabels[def.type]}+${bonus}%` : (isSelf ? 'T×1.5のみ' : '効果なし');
+  });
+  const zoneTotal = [];
+  if (zoneParty.selfInZone) zoneTotal.push('T×1.5');
+  if (zoneParty.slash) zoneTotal.push(`スキル+${zoneParty.slash}%`);
+  if (zoneParty.attr)  zoneTotal.push(`属性+${zoneParty.attr}%`);
+  if (zoneParty.crit)  zoneTotal.push(`暴走+${zoneParty.crit}%`);
+  $('r_zone_total').textContent = zoneTotal.length ? zoneTotal.join(' / ') : 'ゾーンなし';
+  $('r_zone_slash').textContent = zoneParty.slash ? '+' + zoneParty.slash + '%' : '—';
+  $('r_zone_attr').textContent  = zoneParty.attr  ? '+' + zoneAttrVal + '%' + (forceCheck ? ' (÷2)' : '') : '—';
+  $('r_zone_crit').textContent  = zoneParty.crit  ? '+' + zoneParty.crit + '%' : '—';
+  $('r_suijaku').textContent       = '+' + suijaku + '%';
+  $('r_freeze').textContent        = '+' + freeze + '%';
+  $('r_senisosshitsu').textContent = '+' + senisosshitsu + '%';
+  $('r_res_down').textContent      = '+' + resDown + '%';
+  $('r_slash_res_total').textContent = fd(slashResTotal);
+  $('r_crit_in').textContent = rampageType.min === rampageType.max
+    ? rampageType.mid + '%'
+    : rampageType.mid + '%\n' + rampageType.min + '〜' + rampageType.max;
+  $('r_E27').textContent = fd(E27);
+  $('result').textContent = fi(E28);
+  $('result_min').textContent = fi(E28_min);
+  $('result_max').textContent = fi(E28_max);
+  $('result_yamabiko').textContent = fi(E28_yamabiko);
+}
+
+// ===== localStorage 自動保存・復元 =====
+const LS_KEY = 'dqw_spell_inputs';
+const LS_SLOTS_KEY = 'dqw_spell_slots';
+const LS_VERSION = 'dqw_spell_v3';
+
+const INPUT_IDS = [
+  'weapon','mag','lv','spell_up',
+  'tension_ally',
+  'zone_party_self','zone_party_1','zone_party_2','zone_party_3',
+  'slash','skill_up','cheer','chant',
+  'attr','force_check','fc','fburst',
+  'keitou','meishou',
+  'tension_enemy',
+  'resist_slash','resist_attr','resist_attr_force',
+  'inga','inga_kiwami','fbreak','attr_res_change','flash',
+  'suijaku','freeze','senisosshitsu','res_down',
+  'crit_up','crit_type'
+];
+
+const DEFAULT_VALUES = {
+  weapon:'love', mag:'1583', lv:'15', spell_up:'0',
+  tension_ally:'50',
+  zone_party_self:'none', zone_party_1:'none', zone_party_2:'none', zone_party_3:'none',
+  slash:'70', skill_up:'40', cheer:'80', chant:'0',
+  attr:'79', force_check: true, fc:'4', fburst:'0',
+  keitou:'10', meishou:'10',
+  tension_enemy:'50',
+  resist_slash:'40', resist_attr:'-25', resist_attr_force:'0',
+  inga:'4', inga_kiwami:'1', fbreak:'2', attr_res_change:'0', flash:'1.8',
+  suijaku:'0', freeze:'0', senisosshitsu:'0', res_down:'0',
+  crit_up:'12', crit_type:'on'
+};
+
+function collectValues() {
+  const values = {};
+  INPUT_IDS.forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    values[id] = el.type === 'checkbox' ? el.checked : el.value;
+  });
+  return values;
+}
+
+function applyValues(values) {
+  INPUT_IDS.forEach(id => {
+    const el = $(id);
+    if (!el || values[id] === undefined) return;
+    if (el.type === 'checkbox') el.checked = values[id];
+    else if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === String(values[id]))) return; // 選択肢に無い旧値は無視
+    else el.value = values[id];
+  });
+}
+
+function lsSave() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(collectValues())); } catch(e) {}
+}
+
+function lsLoad() {
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (!saved) return;
+    applyValues(JSON.parse(saved));
+  } catch(e) {}
+}
+
+// バージョンが変わったら保存値をクリアしてデフォルト値を使う
+try {
+  if (!localStorage.getItem(LS_VERSION)) {
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_SLOTS_KEY);
+    localStorage.setItem(LS_VERSION, '1');
+  }
+} catch(e) {}
+
+populateWeapons();
+lsLoad();
+document.querySelectorAll('#tab-spell input, #tab-spell select').forEach(el => el.addEventListener('input', () => { calc(); lsSave(); }));
+document.querySelectorAll('#tab-spell input[type=checkbox]').forEach(el => el.addEventListener('change', () => { calc(); lsSave(); }));
+calc();
+
+// ===== 履歴スロット =====
+const slots = { 1: null, 2: null, 3: null };
+
+function slotsLsSave() {
+  try { localStorage.setItem(LS_SLOTS_KEY, JSON.stringify(slots)); } catch(e) {}
+}
+
+function slotsLsLoad() {
+  try {
+    const saved = localStorage.getItem(LS_SLOTS_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    [1,2,3].forEach(i => { if (data[i]) slots[i] = data[i]; });
+  } catch(e) {}
+}
+
+function historyUpdateUI(i) {
+  const s = slots[i];
+  const numsEl   = $('h' + i + '_nums');
+  const loadBtn  = $('h' + i + '_load');
+  const clearBtn = $('h' + i + '_clear');
+  if (s) {
+    numsEl.textContent = s.min + ' 〜 ' + s.mid + ' 〜 ' + s.max;
+    numsEl.className = 'h-nums';
+    loadBtn.disabled  = false;
+    clearBtn.disabled = false;
+    $('h' + i + '_name').value = s.name || '';
+  } else {
+    numsEl.textContent = '未保存';
+    numsEl.className = 'h-nums empty';
+    loadBtn.disabled  = true;
+    clearBtn.disabled = true;
+  }
+}
+
+function historySave(i) {
+  slots[i] = {
+    min: $('result_min').textContent,
+    mid: $('result').textContent,
+    max: $('result_max').textContent,
+    name: $('h' + i + '_name').value,
+    values: collectValues()
+  };
+  historyUpdateUI(i);
+  slotsLsSave();
+}
+
+function historyLoad(i) {
+  const s = slots[i];
+  if (!s) return;
+  applyValues(s.values);
+  calc();
+  lsSave();
+}
+
+function historyClear(i) {
+  slots[i] = null;
+  $('h' + i + '_name').value = '';
+  historyUpdateUI(i);
+  slotsLsSave();
+}
+
+function resetToDefault() {
+  if (!confirm('デフォルト設定に初期化しますか？\n現在の入力値はリセットされます。')) return;
+  applyValues(DEFAULT_VALUES);
+  calc();
+  lsSave();
+}
+
+// ===== 初期値・プリセットの書き出し =====
+// 現在の入力値と保存済み履歴スロットをJSONテキストにする（コピーしてチャットに貼ると初期値・プリセットに設定できる）
+function exportValues() {
+  const data = {
+    tab: 'spell',
+    defaults: collectValues(),
+    presets: [1, 2, 3].map(i => slots[i]
+      ? { slot: i, name: slots[i].name || '', min: slots[i].min, mid: slots[i].mid, max: slots[i].max, values: slots[i].values }
+      : null)
+  };
+  const ta = $('export_text');
+  ta.value = JSON.stringify(data);
+  $('export_copy').disabled = false;
+  $('export_msg').textContent = '';
+  ta.focus();
+  ta.select();
+}
+
+function copyExport() {
+  const ta = $('export_text');
+  if (!ta.value) return;
+  ta.focus();
+  ta.select();
+  const done = () => { $('export_msg').textContent = 'コピーしました'; };
+  const fallback = () => {
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    $('export_msg').textContent = ok ? 'コピーしました' : '選択済みです。長押しでコピーしてください';
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(ta.value).then(done, fallback);
+  } else {
+    fallback();
+  }
+}
+
+// インラインonclickから呼べるよう公開（接頭辞付きで物理タブと衝突しない）
+window.sp_historySave  = historySave;
+window.sp_historyLoad  = historyLoad;
+window.sp_historyClear = historyClear;
+window.sp_resetToDefault = resetToDefault;
+window.sp_exportValues = exportValues;
+window.sp_copyExport = copyExport;
+
+slotsLsLoad();
+[1,2,3].forEach(i => historyUpdateUI(i));
+})();
 </script>
 
 <script>
