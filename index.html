@@ -1734,20 +1734,6 @@ body.theme-damage, body.theme-spell { font-family: 'Helvetica Neue', Arial, sans
   🔗 <a href="https://github.com/arudqw/dqw-damege-calc" target="_blank" style="color:#1a6ab1;">https://github.com/arudqw/dqw-damege-calc</a>
 </div>
 
-<!-- 初期値・プリセットの書き出し -->
-<div class="card">
-  <div class="card-header">初期値・プリセットの書き出し</div>
-  <div style="padding:10px 12px;">
-    <div style="font-size:11px;color:#666;line-height:1.6;margin-bottom:8px;">現在の入力値と、保存済みの履歴スロットをテキストにします。コピーしてチャットに貼ると、初期値・プリセットとして設定できます。</div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <button class="h-btn save" onclick="sp_exportValues()">現在の値を書き出す</button>
-      <button class="h-btn load" id="sp_export_copy" onclick="sp_copyExport()" disabled>コピー</button>
-      <span id="sp_export_msg" style="font-size:11px;color:#0a5c30;"></span>
-    </div>
-    <textarea id="sp_export_text" readonly rows="6" placeholder="「現在の値を書き出す」を押すとここに表示されます" style="width:100%;margin-top:8px;font-size:11px;font-family:monospace;border:1px solid #ddd;border-radius:6px;padding:6px;"></textarea>
-  </div>
-</div>
-
 <!-- 最終結果（sticky） -->
 <div class="result-sticky job-spell" id="sp_result_sticky">
   <div class="result-grid">
@@ -2929,17 +2915,37 @@ const INPUT_IDS = [
 ];
 
 const DEFAULT_VALUES = {
-  weapon:'love', mag:'1583', lv:'15', spell_up:'0',
-  tension_ally:'50',
-  zone_party_self:'none', zone_party_1:'none', zone_party_2:'none', zone_party_3:'none',
-  slash:'70', skill_up:'40', cheer:'80', chant:'0',
-  attr:'79', force_check: true, fc:'4', fburst:'0',
-  keitou:'10', meishou:'10',
-  tension_enemy:'50',
-  resist_slash:'40', resist_attr:'-25', resist_attr_force:'0',
-  inga:'4', inga_kiwami:'1', fbreak:'2', attr_res_change:'0', flash:'1.8',
+  weapon:'love', mag:'1767', lv:'0', spell_up:'40',
+  tension_ally:'0',
+  zone_party_self:'daimadoushi', zone_party_1:'godhan', zone_party_2:'other', zone_party_3:'other',
+  slash:'116', skill_up:'40', cheer:'0', chant:'0',
+  attr:'34', force_check: false, fc:'0', fburst:'0',
+  keitou:'12', meishou:'0',
+  tension_enemy:'-30',
+  resist_slash:'70', resist_attr:'50', resist_attr_force:'0',
+  inga:'0', inga_kiwami:'0', fbreak:'0', attr_res_change:'0', flash:'1',
   suijaku:'0', freeze:'0', senisosshitsu:'0', res_down:'0',
-  crit_up:'12', crit_type:'on'
+  crit_up:'4', crit_type:'supermax'
+};
+
+// 初期プリセット（履歴スロット）。保存済みスロットが無い初回のみ使われる。
+// 結果の数値は起動時に現在の式で再計算するので、式を直しても古い数字は残らない。
+const DEFAULT_PRESETS = {
+  1: { name: '', values: {
+    weapon:'love', mag:'1767', lv:'0', spell_up:'40',
+    tension_ally:'0',
+    zone_party_self:'daimadoushi', zone_party_1:'godhan', zone_party_2:'other', zone_party_3:'other',
+    slash:'116', skill_up:'40', cheer:'0', chant:'0',
+    attr:'34', force_check: false, fc:'0', fburst:'0',
+    keitou:'12', meishou:'0',
+    tension_enemy:'-30',
+    resist_slash:'70', resist_attr:'50', resist_attr_force:'0',
+    inga:'0', inga_kiwami:'0', fbreak:'0', attr_res_change:'0', flash:'1',
+    suijaku:'0', freeze:'0', senisosshitsu:'0', res_down:'0',
+    crit_up:'4', crit_type:'supermax'
+  } },
+  2: null,
+  3: null
 };
 
 function collectValues() {
@@ -2969,7 +2975,7 @@ function lsSave() {
 function lsLoad() {
   try {
     const saved = localStorage.getItem(LS_KEY);
-    if (!saved) return;
+    if (!saved) { applyValues(DEFAULT_VALUES); return; }   // 初回：初期値
     applyValues(JSON.parse(saved));
   } catch(e) {}
 }
@@ -2996,10 +3002,32 @@ function slotsLsSave() {
   try { localStorage.setItem(LS_SLOTS_KEY, JSON.stringify(slots)); } catch(e) {}
 }
 
+// 初期プリセットを組み立てる：値を一時的に適用して現在の式で結果を計算し、入力は元に戻す
+function buildDefaultSlots() {
+  const current = collectValues();
+  const out = { 1: null, 2: null, 3: null };
+  [1,2,3].forEach(i => {
+    const p = DEFAULT_PRESETS[i];
+    if (!p) return;
+    applyValues(p.values);
+    calc();
+    out[i] = { min: $('result_min').textContent, mid: $('result').textContent, max: $('result_max').textContent,
+               name: p.name || '', values: Object.assign({}, p.values) };
+  });
+  applyValues(current);
+  calc();
+  return out;
+}
+
 function slotsLsLoad() {
+  let saved = null;
+  try { saved = localStorage.getItem(LS_SLOTS_KEY); } catch(e) {}
+  if (saved === null) {                                   // 初回（一度も保存されていない）：初期プリセット
+    const d = buildDefaultSlots();
+    [1,2,3].forEach(i => { slots[i] = d[i]; });
+    return;
+  }
   try {
-    const saved = localStorage.getItem(LS_SLOTS_KEY);
-    if (!saved) return;
     const data = JSON.parse(saved);
     [1,2,3].forEach(i => { if (data[i]) slots[i] = data[i]; });
   } catch(e) {}
@@ -3058,49 +3086,11 @@ function resetToDefault() {
   lsSave();
 }
 
-// ===== 初期値・プリセットの書き出し =====
-// 現在の入力値と保存済み履歴スロットをJSONテキストにする（コピーしてチャットに貼ると初期値・プリセットに設定できる）
-function exportValues() {
-  const data = {
-    tab: 'spell',
-    defaults: collectValues(),
-    presets: [1, 2, 3].map(i => slots[i]
-      ? { slot: i, name: slots[i].name || '', min: slots[i].min, mid: slots[i].mid, max: slots[i].max, values: slots[i].values }
-      : null)
-  };
-  const ta = $('export_text');
-  ta.value = JSON.stringify(data);
-  $('export_copy').disabled = false;
-  $('export_msg').textContent = '';
-  ta.focus();
-  ta.select();
-}
-
-function copyExport() {
-  const ta = $('export_text');
-  if (!ta.value) return;
-  ta.focus();
-  ta.select();
-  const done = () => { $('export_msg').textContent = 'コピーしました'; };
-  const fallback = () => {
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) {}
-    $('export_msg').textContent = ok ? 'コピーしました' : '選択済みです。長押しでコピーしてください';
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(ta.value).then(done, fallback);
-  } else {
-    fallback();
-  }
-}
-
 // インラインonclickから呼べるよう公開（接頭辞付きで物理タブと衝突しない）
 window.sp_historySave  = historySave;
 window.sp_historyLoad  = historyLoad;
 window.sp_historyClear = historyClear;
 window.sp_resetToDefault = resetToDefault;
-window.sp_exportValues = exportValues;
-window.sp_copyExport = copyExport;
 
 slotsLsLoad();
 [1,2,3].forEach(i => historyUpdateUI(i));
