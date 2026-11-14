@@ -3525,7 +3525,9 @@ function calculate() {
 
 // 「装着後」入力欄が編集された時、心の合計を差し引いてベース（未装着）側に反映する
 function syncBaseFromAfter(afterId, baseId, statIndex) {
-  const kokoroSum = getKokoroSum();
+  // 「装着後」の値から、心の加算分（現在の武器の属性・覚醒＋を反映した値）を引いて、未装着の値を逆算する
+  const weapon = WEAPONS[document.getElementById('weapon').value];
+  const kokoroSum = getKokoroSum(weapon.type).sum;
   const afterVal = parseFloat(document.getElementById(afterId).value) || 0;
   document.getElementById(baseId).value = afterVal - kokoroSum[statIndex];
 }
