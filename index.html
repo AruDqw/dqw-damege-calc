@@ -1769,11 +1769,15 @@ body.theme-damage, body.theme-spell { font-family: 'Helvetica Neue', Arial, sans
     </div>
 
     <div class="heal-awaken-box">
-      <div class="heal-awaken-title">覚醒＋（対象の心を装着した時にだけ回復魔力へ加算・オートにも反映）</div>
+      <div class="heal-awaken-title">覚醒＋（対象の心を装着した時にだけ回復魔力へ加算・オートにも反映。同じ心の（緑）／（緑+他）は共通の値）</div>
       <div class="heal-awaken-grid">
         <div class="heal-awaken-item">
-          <label for="awaken_ryu">リュウちゃん(覚醒)</label>
+          <label for="awaken_ryu">リュウちゃん</label>
           <input type="number" id="awaken_ryu" min="0" max="25" value="0">
+        </div>
+        <div class="heal-awaken-item">
+          <label for="awaken_genryu">いびつ世界の幻竜</label>
+          <input type="number" id="awaken_genryu" min="0" max="50" value="0">
         </div>
         <div class="heal-awaken-item">
           <label for="awaken_shidou">破壊の邪神シドー</label>
@@ -1802,6 +1806,7 @@ body.theme-damage, body.theme-spell { font-family: 'Helvetica Neue', Arial, sans
     <div class="heal-field">
       <select id="kokoro4"></select>
     </div>
+    <div class="heal-note">※ ⚡オートでは、同じ心の（緑）と（緑+他）は同時に選ばれず、（緑）は1つまでです。手動では制限なく自由に選べます。</div>
 
     <div class="heal-cost-row">
       <div class="heal-cost-lv">
@@ -3138,10 +3143,15 @@ const WEAPONS = [
 
 // 心データ：stats=[回復魔力, スキルHP回復効果%, とくぎ/呪文HP回復効果%]
 // type: "tokugi"=とくぎ専用, "jumon"=呪文専用, null=どちらでも有効
+// group: 同じ心の別バージョン（緑／緑+他）が共有する名前。同じgroupの心は同時に装着できない
+// green: true=「（緑）」の心。4スロットのうち1つしか装着できない
 // 武器typeと心typeが不一致の場合、stats[2](3つ目のステータス)が無効(0)になる
 const KOKORO = [
   { name: "風の精霊",             stats: [212, 15, 0], cost: 200, costBonus: 4,  type: null },
-  { name: "リュウちゃん(覚醒)",   stats: [260, 10, 0], cost: 161, costBonus: 10, type: null },
+  { name: "リュウちゃん（緑）",     group: "リュウちゃん",     green: true,  stats: [260, 10, 0], cost: 161, costBonus: 10, type: null },
+  { name: "リュウちゃん（緑+他）",   group: "リュウちゃん",     green: false, stats: [195, 10, 0], cost: 161, costBonus: 10, type: null },
+  { name: "いびつ世界の幻竜（緑）",   group: "いびつ世界の幻竜", green: true,  stats: [272, 13, 0], cost: 167, costBonus: 4,  type: null },
+  { name: "いびつ世界の幻竜（緑+他）", group: "いびつ世界の幻竜", green: false, stats: [204, 13, 0], cost: 167, costBonus: 4,  type: null },
   { name: "破壊の邪神シドー",     stats: [223, 12, 0], cost: 197, costBonus: 4,  type: null },
   { name: "セイレーンゴースト(とくぎ)", stats: [173, 0, 10], cost: 171, costBonus: 4, type: "tokugi" },
   { name: "魔王バラモス",         stats: [156, 12, 0], cost: 174, costBonus: 4,  type: null },
@@ -3151,31 +3161,42 @@ const KOKORO = [
   { name: "スーパーテンツク",     stats: [159, 10, 0], cost: 137, costBonus: 4,  type: null },
   { name: "ナウマンボーグ",       stats: [133, 12, 0], cost: 107, costBonus: 4,  type: null },
   { name: "ジャミラス(とくぎ)",   stats: [153,  0, 7], cost: 114, costBonus: 4,  type: "tokugi" },
-  { name: "ごくらくちょう(呪文)", stats: [189,  0, 8], cost: 125, costBonus: 4,  type: "jumon" }
+  { name: "ごくらくちょう(呪文)", stats: [189,  0, 8], cost: 125, costBonus: 4,  type: "jumon" },
+  { name: "ソードイド",           stats: [134, 5, 0],  cost: 152, costBonus: 4,  type: null },
+  { name: "ゴールデンチョコ（とくぎ）", stats: [123, 0, 7], cost: 152, costBonus: 4, type: "tokugi" }
 ];
 
-// 「覚醒＋」対象の心：名前 → 対応する入力欄ID
-// 入力値(0〜25)は、その心をどのスロットに装着していても回復魔力へそのまま加算される
+// 「覚醒＋」対象の心：心のキー（groupがあればgroup、なければ名前）→ 対応する入力欄ID
+// 入力値(0〜25。いびつ世界の幻竜のみ0〜50)は、その心をどのスロットに装着していても回復魔力へそのまま加算される
 // （スロットごとの個別値ではなく、心そのものに紐づく共通値。オート選択の探索にも反映）
 const AWAKEN_KOKORO_INPUT = {
-  "リュウちゃん(覚醒)":     "awaken_ryu",
+  "リュウちゃん":           "awaken_ryu",
+  "いびつ世界の幻竜":       "awaken_genryu",
   "破壊の邪神シドー":       "awaken_shidou",
   "魔王バラモス":           "awaken_baramosu",
   "ナウマンボーグ":         "awaken_nauman"
 };
 
-function getKokoroAwakenValue(name) {
-  const inputId = AWAKEN_KOKORO_INPUT[name];
+// 覚醒＋の上限：既定25。いびつ世界の幻竜のみ50
+const AWAKEN_MAX_DEFAULT = 25;
+const AWAKEN_MAX = { "いびつ世界の幻竜": 50 };
+function getKokoroAwakenMax(key) { return AWAKEN_MAX[key] || AWAKEN_MAX_DEFAULT; }
+
+// 心のキー：同じ心の（緑）と（緑+他）は同じキーになる
+function kokoroKey(k) { return k.group || k.name; }
+
+function getKokoroAwakenValue(key) {
+  const inputId = AWAKEN_KOKORO_INPUT[key];
   if (!inputId) return 0;
   const el = document.getElementById(inputId);
   if (!el) return 0;
   const v = parseInt(el.value, 10) || 0;
-  return Math.max(0, Math.min(25, v));
+  return Math.max(0, Math.min(getKokoroAwakenMax(key), v));
 }
 
 // 心1件（KOKOROの要素）の、覚醒＋込みの実効回復魔力を返す
 function getEffectiveKokoroMagic(k) {
-  return k.stats[0] + getKokoroAwakenValue(k.name);
+  return k.stats[0] + getKokoroAwakenValue(kokoroKey(k));
 }
 
 // 4つの心セレクトすべてについて、「覚醒＋」対象の選択肢の表示名を最新の入力値に合わせて更新する
@@ -3188,8 +3209,8 @@ function refreshKokoroOptionLabels() {
       const optIdx = parseInt(opt.value, 10);
       if (optIdx < 0) return;
       const k = KOKORO[optIdx];
-      if (!AWAKEN_KOKORO_INPUT[k.name]) return;
-      const awakenVal = getKokoroAwakenValue(k.name);
+      if (!AWAKEN_KOKORO_INPUT[kokoroKey(k)]) return;
+      const awakenVal = getKokoroAwakenValue(kokoroKey(k));
       opt.textContent = awakenVal > 0
         ? `${k.name}+${awakenVal}  [${k.cost}]`
         : `${k.name}  [${k.cost}]`;
@@ -3198,10 +3219,10 @@ function refreshKokoroOptionLabels() {
 }
 
 function populateKokoroSelects() {
-  // 初期状態: スロット1〜4にそれぞれ シドー / リュウちゃん(覚醒) / 風の精霊 / メイデンドール を装着済みとする
+  // 初期状態: スロット1〜4にそれぞれ 風の精霊 / リュウちゃん（緑） / 破壊の邪神シドー / メイデンドール を装着済みとする
   const defaultNames = {
     kokoro1: "風の精霊",
-    kokoro2: "リュウちゃん(覚醒)",
+    kokoro2: "リュウちゃん（緑）",
     kokoro3: "破壊の邪神シドー",
     kokoro4: "メイデンドール"
   };
@@ -3232,6 +3253,24 @@ function populateKokoroSelects() {
       calculate();
     });
   });
+}
+
+// ===== オート選択の制約 =====
+// ⚡オートで自動選択するときだけ適用（手動で選ぶときは制限なし。同じ心を重複して選べる）
+// ① 同じ心（groupが同じ）は同時に選ばない（（緑）と（緑+他）も同じ心の扱い）
+// ② 「（緑）」の心は4スロットのうち1つだけ（もう一方は（緑+他）にする）
+function isKokoroSetValid(indices) {
+  const groups = new Set();
+  let greens = 0;
+  for (const i of indices) {
+    const k = KOKORO[i];
+    if (k.group) {
+      if (groups.has(k.group)) return false;
+      groups.add(k.group);
+    }
+    if (k.green) greens++;
+  }
+  return greens <= 1;
 }
 
 // レベルごとの基礎コスト上限
@@ -3303,6 +3342,7 @@ function autoSelectKokoro() {
   for (let c = b+1; c < n-1; c++)
   for (let d = c+1; d < n;   d++) {
     const combo = [a, b, c, d];
+    if (!isKokoroSetValid(combo)) continue;   // オート時のみ：同じ心の重複／（緑）が2つ以上の組み合わせは除外
     const totalCost  = combo.reduce((s, i) => s + KOKORO[i].cost, 0);
     const totalBonus = combo.reduce((s, i) => s + KOKORO[i].costBonus, 0);
     const maxCost = baseCost + totalBonus;
